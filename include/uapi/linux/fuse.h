@@ -240,6 +240,10 @@
  *  - add FUSE_COPY_FILE_RANGE_64
  *  - add struct fuse_copy_file_range_out
  *  - add FUSE_NOTIFY_PRUNE
+ *
+ *  7.46
+ *  - add FUSE_REQUEST_BATCHING
+ *  - add struct fuse_batch_header
  */
 
 #ifndef _LINUX_FUSE_H
@@ -448,6 +452,9 @@ struct fuse_file_lock {
  * FUSE_OVER_IO_URING: Indicate that client supports io-uring
  * FUSE_REQUEST_TIMEOUT: kernel supports timing out requests.
  *			 init_out.request_timeout contains the timeout (in secs)
+ * FUSE_REQUEST_BATCHING: kernel supports batching fuse requests. Instead of
+ * sending one request, the kernel will send as many requests as the buffer
+ * allows.
  */
 #define FUSE_ASYNC_READ		(1 << 0)
 #define FUSE_POSIX_LOCKS	(1 << 1)
@@ -495,6 +502,7 @@ struct fuse_file_lock {
 #define FUSE_ALLOW_IDMAP	(1ULL << 40)
 #define FUSE_OVER_IO_URING	(1ULL << 41)
 #define FUSE_REQUEST_TIMEOUT	(1ULL << 42)
+#define FUSE_REQUEST_BATCHING	(1ULL << 43)
 
 /**
  * CUSE INIT request/reply flags
@@ -663,6 +671,7 @@ enum fuse_opcode {
 	FUSE_TMPFILE		= 51,
 	FUSE_STATX		= 52,
 	FUSE_COPY_FILE_RANGE_64	= 53,
+	FUSE_BATCHED_REQUEST    = 54,
 
 	/* CUSE specific operations */
 	CUSE_INIT		= 4096,
@@ -1306,6 +1315,12 @@ struct fuse_uring_cmd_req {
 	/* queue the command is for (queue index) */
 	uint16_t qid;
 	uint8_t padding[6];
+};
+
+struct fuse_batch_header {
+	uint32_t	len;
+	uint32_t	opcode;
+	uint64_t	reserved;
 };
 
 #endif /* _LINUX_FUSE_H */

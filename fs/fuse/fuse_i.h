@@ -921,6 +921,12 @@ struct fuse_conn {
 	/* Is synchronous FUSE_INIT allowed? */
 	unsigned int sync_init:1;
 
+	/*
+	 * Does the server want to batch as many requests into the buffer as
+	 * possible?
+	 */
+	unsigned int request_batching:1;
+
 	/* Use io_uring for communication */
 	unsigned int io_uring;
 
