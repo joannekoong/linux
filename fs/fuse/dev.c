@@ -1382,6 +1382,92 @@ __releases(fiq->lock)
 		return fuse_read_batch_forget(fiq, cs, nbytes);
 }
 
+/* read a request off the fiq pending list into the user buffer */
+static ssize_t fuse_read_fiq_pending_request(struct fuse_dev *fud,
+					     struct fuse_copy_state *cs,
+					     size_t nbytes, bool *retry)
+{
+	ssize_t err;
+	struct fuse_conn *fc = fud->fc;
+	struct fuse_iqueue *fiq = &fc->iq;
+	struct fuse_pqueue *fpq = &fud->pq;
+	struct fuse_req *req;
+	struct fuse_args *args;
+	unsigned reqsize;
+	unsigned int hash;
+
+	req = list_entry(fiq->pending.next, struct fuse_req, list);
+	clear_bit(FR_PENDING, &req->flags);
+	list_del_init(&req->list);
+	spin_unlock(&fiq->lock);
+
+	args = req->args;
+	reqsize = req->in.h.len;
+	*retry = false;
+
+	/* If request is too large, reply with an error and restart the read */
+	if (nbytes < reqsize) {
+		req->out.h.error = -EIO;
+		/* SETXATTR is special, since it may contain too large data */
+		if (args->opcode == FUSE_SETXATTR)
+			req->out.h.error = -E2BIG;
+		fuse_request_end(req);
+		*retry = true;
+		return req->out.h.error;
+	}
+	spin_lock(&fpq->lock);
+	/*
+	 *  Must not put request on fpq->io queue after having been shut down by
+	 *  fuse_abort_conn()
+	 */
+	if (!fpq->connected) {
+		req->out.h.error = err = -ECONNABORTED;
+		goto out_end;
+
+	}
+	list_add(&req->list, &fpq->io);
+	spin_unlock(&fpq->lock);
+	cs->req = req;
+	err = fuse_copy_one(cs, &req->in.h, sizeof(req->in.h));
+	if (!err)
+		err = fuse_copy_args(cs, args->in_numargs, args->in_pages,
+				     (struct fuse_arg *) args->in_args, 0);
+	fuse_copy_finish(cs);
+	spin_lock(&fpq->lock);
+	clear_bit(FR_LOCKED, &req->flags);
+	if (!fpq->connected) {
+		err = fc->aborted ? -ECONNABORTED : -ENODEV;
+		goto out_end;
+	}
+	if (err) {
+		req->out.h.error = -EIO;
+		goto out_end;
+	}
+	if (!test_bit(FR_ISREPLY, &req->flags)) {
+		err = reqsize;
+		goto out_end;
+	}
+	hash = fuse_req_hash(req->in.h.unique);
+	list_move_tail(&req->list, &fpq->processing[hash]);
+	__fuse_get_request(req);
+	set_bit(FR_SENT, &req->flags);
+	spin_unlock(&fpq->lock);
+	/* matches barrier in request_wait_answer() */
+	smp_mb__after_atomic();
+	if (test_bit(FR_INTERRUPTED, &req->flags))
+		queue_interrupt(req);
+	fuse_put_request(req);
+
+	return reqsize;
+
+out_end:
+	if (!test_bit(FR_PRIVATE, &req->flags))
+		list_del_init(&req->list);
+	spin_unlock(&fpq->lock);
+	fuse_request_end(req);
+	return err;
+}
+
 /*
  * Read a single request into the userspace filesystem's buffer.  This
  * function waits until a request is available, then removes it from
@@ -1394,14 +1480,12 @@ __releases(fiq->lock)
 static ssize_t fuse_dev_do_read(struct fuse_dev *fud, struct file *file,
 				struct fuse_copy_state *cs, size_t nbytes)
 {
-	ssize_t err;
+	int err;
 	struct fuse_conn *fc = fud->fc;
 	struct fuse_iqueue *fiq = &fc->iq;
-	struct fuse_pqueue *fpq = &fud->pq;
 	struct fuse_req *req;
-	struct fuse_args *args;
-	unsigned reqsize;
-	unsigned int hash;
+	ssize_t copied;
+	bool retry = false;
 
 	/*
 	 * Require sane minimum read buffer - that has capacity for fixed part
@@ -1455,74 +1539,10 @@ static ssize_t fuse_dev_do_read(struct fuse_dev *fud, struct file *file,
 			fiq->forget_batch = 16;
 	}
 
-	req = list_entry(fiq->pending.next, struct fuse_req, list);
-	clear_bit(FR_PENDING, &req->flags);
-	list_del_init(&req->list);
-	spin_unlock(&fiq->lock);
-
-	args = req->args;
-	reqsize = req->in.h.len;
-
-	/* If request is too large, reply with an error and restart the read */
-	if (nbytes < reqsize) {
-		req->out.h.error = -EIO;
-		/* SETXATTR is special, since it may contain too large data */
-		if (args->opcode == FUSE_SETXATTR)
-			req->out.h.error = -E2BIG;
-		fuse_request_end(req);
+	copied = fuse_read_fiq_pending_request(fud, cs, nbytes, &retry);
+	if (retry)
 		goto restart;
-	}
-	spin_lock(&fpq->lock);
-	/*
-	 *  Must not put request on fpq->io queue after having been shut down by
-	 *  fuse_abort_conn()
-	 */
-	if (!fpq->connected) {
-		req->out.h.error = err = -ECONNABORTED;
-		goto out_end;
-
-	}
-	list_add(&req->list, &fpq->io);
-	spin_unlock(&fpq->lock);
-	cs->req = req;
-	err = fuse_copy_one(cs, &req->in.h, sizeof(req->in.h));
-	if (!err)
-		err = fuse_copy_args(cs, args->in_numargs, args->in_pages,
-				     (struct fuse_arg *) args->in_args, 0);
-	fuse_copy_finish(cs);
-	spin_lock(&fpq->lock);
-	clear_bit(FR_LOCKED, &req->flags);
-	if (!fpq->connected) {
-		err = fc->aborted ? -ECONNABORTED : -ENODEV;
-		goto out_end;
-	}
-	if (err) {
-		req->out.h.error = -EIO;
-		goto out_end;
-	}
-	if (!test_bit(FR_ISREPLY, &req->flags)) {
-		err = reqsize;
-		goto out_end;
-	}
-	hash = fuse_req_hash(req->in.h.unique);
-	list_move_tail(&req->list, &fpq->processing[hash]);
-	__fuse_get_request(req);
-	set_bit(FR_SENT, &req->flags);
-	spin_unlock(&fpq->lock);
-	/* matches barrier in request_wait_answer() */
-	smp_mb__after_atomic();
-	if (test_bit(FR_INTERRUPTED, &req->flags))
-		queue_interrupt(req);
-	fuse_put_request(req);
-
-	return reqsize;
-
-out_end:
-	if (!test_bit(FR_PRIVATE, &req->flags))
-		list_del_init(&req->list);
-	spin_unlock(&fpq->lock);
-	fuse_request_end(req);
-	return err;
+	return copied;
 
  err_unlock:
 	spin_unlock(&fiq->lock);
