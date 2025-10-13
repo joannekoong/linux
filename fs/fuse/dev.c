@@ -1340,7 +1340,9 @@ __releases(fiq->lock)
 		.len = sizeof(ih) + sizeof(arg),
 	};
 
-	max_forgets = (nbytes - ih.len) / sizeof(struct fuse_forget_one);
+	max_forgets = (min(nbytes, U32_MAX) - ih.len) /
+		sizeof(struct fuse_forget_one);
+
 	head = fuse_dequeue_forget(fiq, max_forgets, &count);
 	spin_unlock(&fiq->lock);
 
