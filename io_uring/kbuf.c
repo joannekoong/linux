@@ -427,10 +427,13 @@ static int io_remove_buffers_legacy(struct io_ring_ctx *ctx,
 
 static void io_put_bl(struct io_ring_ctx *ctx, struct io_buffer_list *bl)
 {
-	if (bl->flags & IOBL_BUF_RING)
+	if (bl->flags & IOBL_BUF_RING) {
 		io_free_region(ctx->user, &bl->region);
-	else
+		if (bl->flags & IOBL_KERNEL_MANAGED)
+			kfree(bl->buf_ring);
+	} else {
 		io_remove_buffers_legacy(ctx, bl, -1U);
+	}
 
 	kfree(bl);
 }
@@ -596,6 +599,51 @@ int io_manage_buffers_legacy(struct io_kiocb *req, unsigned int issue_flags)
 	return IOU_COMPLETE;
 }
 
+static int io_setup_kmbuf_ring(struct io_ring_ctx *ctx,
+			       struct io_buffer_list *bl,
+			       const struct io_uring_buf_reg *reg)
+{
+	struct io_uring_region_desc rd;
+	struct io_uring_buf_ring *ring;
+	unsigned long ring_size;
+	void *buf_region;
+	unsigned int i;
+	int ret;
+
+	/* allocate pages for the ring structure */
+	ring_size = flex_array_size(ring, bufs, reg->ring_entries);
+	ring = kzalloc(ring_size, GFP_KERNEL_ACCOUNT);
+	if (!ring)
+		return -ENOMEM;
+
+	memset(&rd, 0, sizeof(rd));
+	rd.size = (u64)reg->buf_size * reg->ring_entries;
+
+	ret = io_create_region(ctx, &bl->region, &rd, 0);
+	if (ret) {
+		kfree(ring);
+		return ret;
+	}
+
+	/* initialize ring buf entries to point to the buffers */
+	buf_region = bl->region.ptr;
+	for (i = 0; i < reg->ring_entries; i++) {
+		struct io_uring_buf *buf = &ring->bufs[i];
+
+		buf->addr = (u64)(uintptr_t)buf_region;
+		buf->len = reg->buf_size;
+		buf->bid = i;
+
+		buf_region += reg->buf_size;
+	}
+	ring->tail = reg->ring_entries;
+
+	bl->buf_ring = ring;
+	bl->flags |= IOBL_KERNEL_MANAGED;
+
+	return 0;
+}
+
 int io_register_pbuf_ring(struct io_ring_ctx *ctx, void __user *arg)
 {
 	struct io_uring_buf_reg reg;
@@ -612,13 +660,23 @@ int io_register_pbuf_ring(struct io_ring_ctx *ctx, void __user *arg)
 		return -EFAULT;
 	if (!mem_is_zero(reg.resv, sizeof(reg.resv)))
 		return -EINVAL;
-	if (reg.flags & ~(IOU_PBUF_RING_MMAP | IOU_PBUF_RING_INC))
+	if (reg.flags & ~(IOU_PBUF_RING_MMAP | IOU_PBUF_RING_INC |
+			  IOU_PBUF_RING_KERNEL_MANAGED))
 		return -EINVAL;
 	if (!is_power_of_2(reg.ring_entries))
 		return -EINVAL;
 	/* cannot disambiguate full vs empty due to head/tail size */
 	if (reg.ring_entries >= 65536)
 		return -EINVAL;
+
+	if (reg.flags & IOU_PBUF_RING_KERNEL_MANAGED) {
+		if (!(reg.flags & IOU_PBUF_RING_MMAP))
+			return -EINVAL;
+		if (reg.flags & IOU_PBUF_RING_INC)
+			return -EINVAL;
+		if (!reg.buf_size || !PAGE_ALIGNED(reg.buf_size))
+			return -EINVAL;
+	}
 
 	bl = io_buffer_get_list(ctx, reg.bgid);
 	if (bl) {
@@ -634,17 +692,26 @@ int io_register_pbuf_ring(struct io_ring_ctx *ctx, void __user *arg)
 
 	mmap_offset = (unsigned long)reg.bgid << IORING_OFF_PBUF_SHIFT;
 	ring_size = flex_array_size(br, bufs, reg.ring_entries);
-
 	memset(&rd, 0, sizeof(rd));
-	rd.size = PAGE_ALIGN(ring_size);
-	if (!(reg.flags & IOU_PBUF_RING_MMAP)) {
-		rd.user_addr = reg.ring_addr;
-		rd.flags |= IORING_MEM_REGION_TYPE_USER;
+
+	if (reg.flags & IOU_PBUF_RING_KERNEL_MANAGED) {
+		ret = io_setup_kmbuf_ring(ctx, bl, &reg);
+		if (ret) {
+			kfree(bl);
+			return ret;
+		}
+	} else {
+		rd.size = PAGE_ALIGN(ring_size);
+		if (!(reg.flags & IOU_PBUF_RING_MMAP)) {
+			rd.user_addr = reg.ring_addr;
+			rd.flags |= IORING_MEM_REGION_TYPE_USER;
+		}
+		ret = io_create_region(ctx, &bl->region, &rd, mmap_offset);
+		if (ret)
+			goto fail;
+		bl->buf_ring = io_region_get_ptr(&bl->region);
 	}
-	ret = io_create_region(ctx, &bl->region, &rd, mmap_offset);
-	if (ret)
-		goto fail;
-	br = io_region_get_ptr(&bl->region);
+	br = bl->buf_ring;
 
 #ifdef SHM_COLOUR
 	/*
@@ -666,15 +733,13 @@ int io_register_pbuf_ring(struct io_ring_ctx *ctx, void __user *arg)
 	bl->nr_entries = reg.ring_entries;
 	bl->mask = reg.ring_entries - 1;
 	bl->flags |= IOBL_BUF_RING;
-	bl->buf_ring = br;
 	if (reg.flags & IOU_PBUF_RING_INC)
 		bl->flags |= IOBL_INC;
 	ret = io_buffer_add_list(ctx, bl, reg.bgid);
 	if (!ret)
 		return 0;
 fail:
-	io_free_region(ctx->user, &bl->region);
-	kfree(bl);
+	io_put_bl(ctx, bl);
 	return ret;
 }
 
