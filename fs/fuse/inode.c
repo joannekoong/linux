@@ -10,6 +10,7 @@
 #include "fuse_bpf_i.h"
 #include "fuse_dev_i.h"
 #include "dev_uring_i.h"
+#include "iomap_i.h"
 
 #include <linux/dax.h>
 #include <linux/pagemap.h>
@@ -163,7 +164,7 @@ static void fuse_evict_inode(struct inode *inode)
 	/* Will write inode on close/munmap and in all other dirtiers */
 	WARN_ON(inode_state_read_once(inode) & I_DIRTY_INODE);
 
-	if (FUSE_IS_VIRTIO_DAX(fi))
+	if (FUSE_IS_VIRTIO_DAX(fi) || fuse_iomap_dax(fi))
 		dax_break_layout_final(inode);
 
 	truncate_inode_pages_final(&inode->i_data);
@@ -1044,6 +1045,8 @@ void fuse_conn_put(struct fuse_conn *fc)
 	}
 	if (IS_ENABLED(CONFIG_FUSE_PASSTHROUGH))
 		fuse_backing_files_free(fc);
+	if (fc->iomap)
+		fuse_iomap_teardown(fc);
 	call_rcu(&fc->rcu, delayed_release);
 }
 EXPORT_SYMBOL_GPL(fuse_conn_put);
@@ -1457,6 +1460,12 @@ static void process_init_reply(struct fuse_mount *fm, struct fuse_args *args,
 
 			if (flags & FUSE_REQUEST_TIMEOUT)
 				timeout = arg->request_timeout;
+
+			if (flags & FUSE_IOMAP) {
+				fc->iomap = 1;
+				if (ok)
+					ok = !fuse_init_iomap(fc);
+			}
 		} else {
 			ra_pages = fc->max_read / PAGE_SIZE;
 			fc->no_lock = 1;
@@ -1507,7 +1516,7 @@ static struct fuse_init_args *fuse_new_init(struct fuse_mount *fm)
 		FUSE_SECURITY_CTX | FUSE_CREATE_SUPP_GROUP |
 		FUSE_HAS_EXPIRE_ONLY | FUSE_DIRECT_IO_ALLOW_MMAP |
 		FUSE_NO_EXPORT_SUPPORT | FUSE_HAS_RESEND | FUSE_ALLOW_IDMAP |
-		FUSE_REQUEST_TIMEOUT;
+		FUSE_REQUEST_TIMEOUT | FUSE_IOMAP;
 #ifdef CONFIG_FUSE_DAX
 	if (fm->fc->dax)
 		flags |= FUSE_MAP_ALIGNMENT;

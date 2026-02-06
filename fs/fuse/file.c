@@ -7,6 +7,7 @@
 */
 
 #include "fuse_i.h"
+#include "iomap_i.h"
 
 #include <linux/pagemap.h>
 #include <linux/slab.h>
@@ -3200,11 +3201,6 @@ void fuse_init_file_inode(struct inode *inode, unsigned int flags)
 	struct fuse_inode *fi = get_fuse_inode(inode);
 	struct fuse_conn *fc = get_fuse_conn(inode);
 
-	inode->i_fop = &fuse_file_operations;
-	inode->i_data.a_ops = &fuse_file_aops;
-	if (fc->writeback_cache)
-		mapping_set_writeback_may_deadlock_on_reclaim(&inode->i_data);
-
 	INIT_LIST_HEAD(&fi->write_files);
 	INIT_LIST_HEAD(&fi->queued_writes);
 	fi->writectr = 0;
@@ -3212,6 +3208,15 @@ void fuse_init_file_inode(struct inode *inode, unsigned int flags)
 	init_waitqueue_head(&fi->page_waitq);
 	init_waitqueue_head(&fi->direct_io_waitq);
 
-	if (IS_ENABLED(CONFIG_FUSE_DAX))
+	if (fc->iomap && !fuse_iomap_init_file_inode(inode))
+		return;
+
+	inode->i_fop = &fuse_file_operations;
+	inode->i_data.a_ops = &fuse_file_aops;
+	if (fc->writeback_cache)
+		mapping_set_writeback_may_deadlock_on_reclaim(&inode->i_data);
+
+	if (IS_ENABLED(CONFIG_FUSE_DAX)) {
 		fuse_dax_inode_init(inode, flags);
+	}
 }

@@ -634,6 +634,16 @@ struct fuse_sync_bucket {
 	struct rcu_head rcu;
 };
 
+#define FUSE_NDAX_DEV_LIMIT 64
+
+struct fuse_iomap_state {
+	/* ndevs value is from config passed by server */
+	struct {
+		int ndevs;
+		struct dax_device **devp;
+	} dax;
+};
+
 /**
  * A Fuse connection.
  *
@@ -921,6 +931,9 @@ struct fuse_conn {
 	/* Is synchronous FUSE_INIT allowed? */
 	unsigned int sync_init:1;
 
+	/* i/o operations should go directly to iomap? */
+	unsigned int iomap:1;
+
 	/* Use io_uring for communication */
 	unsigned int io_uring;
 
@@ -995,6 +1008,8 @@ struct fuse_conn {
 		/* Request timeout (in jiffies). 0 = no timeout */
 		unsigned int req_timeout;
 	} timeout;
+
+	struct fuse_iomap_state iomap_state;
 
 	/* points to bpf progs registered by the server */
 	struct fuse_bpf_ops *bpf_ops;
@@ -1513,8 +1528,9 @@ void fuse_free_conn(struct fuse_conn *fc);
 
 static inline bool fuse_iomap_dax(struct fuse_inode *fuse_inode) /* Will be superseded */
 {
-	(void)fuse_inode;
-	return false;
+	struct fuse_conn *fc = get_fuse_conn(&fuse_inode->inode);
+
+	return fc->dax_mode == FUSE_DAX_ALWAYS;
 }
 #define FUSE_IS_VIRTIO_DAX(fuse_inode) (IS_ENABLED(CONFIG_FUSE_DAX)	\
 					&& IS_DAX(&fuse_inode->inode)  \
