@@ -243,7 +243,7 @@ static void fuse_truncate_update_attr(struct inode *inode, struct file *file)
 	fuse_invalidate_attr_mask(inode, FUSE_STATX_MODSIZE);
 }
 
-static int fuse_open(struct inode *inode, struct file *file)
+int fuse_open(struct inode *inode, struct file *file)
 {
 	struct fuse_mount *fm = get_fuse_mount(inode);
 	struct fuse_inode *fi = get_fuse_inode(inode);
@@ -384,7 +384,7 @@ void fuse_release_common(struct file *file, bool isdir)
 			  (fl_owner_t) file, isdir);
 }
 
-static int fuse_release(struct inode *inode, struct file *file)
+int fuse_release(struct inode *inode, struct file *file)
 {
 	struct fuse_conn *fc = get_fuse_conn(inode);
 
@@ -454,7 +454,7 @@ static void fuse_sync_writes(struct inode *inode)
 	fuse_release_nowrite(inode);
 }
 
-static int fuse_flush(struct file *file, fl_owner_t id)
+int fuse_flush(struct file *file, fl_owner_t id)
 {
 	struct inode *inode = file_inode(file);
 	struct fuse_mount *fm = get_fuse_mount(inode);
@@ -527,8 +527,7 @@ int fuse_fsync_common(struct file *file, loff_t start, loff_t end,
 	return fuse_simple_request(fm, &args);
 }
 
-static int fuse_fsync(struct file *file, loff_t start, loff_t end,
-		      int datasync)
+int fuse_fsync(struct file *file, loff_t start, loff_t end, int datasync)
 {
 	struct inode *inode = file->f_mapping->host;
 	struct fuse_conn *fc = get_fuse_conn(inode);
@@ -2531,7 +2530,7 @@ static int fuse_setlk(struct file *file, struct file_lock *fl, int flock)
 	return err;
 }
 
-static int fuse_file_lock(struct file *file, int cmd, struct file_lock *fl)
+int fuse_file_lock(struct file *file, int cmd, struct file_lock *fl)
 {
 	struct inode *inode = file_inode(file);
 	struct fuse_conn *fc = get_fuse_conn(inode);
@@ -2554,7 +2553,7 @@ static int fuse_file_lock(struct file *file, int cmd, struct file_lock *fl)
 	return err;
 }
 
-static int fuse_file_flock(struct file *file, int cmd, struct file_lock *fl)
+int fuse_file_flock(struct file *file, int cmd, struct file_lock *fl)
 {
 	struct inode *inode = file_inode(file);
 	struct fuse_conn *fc = get_fuse_conn(inode);
@@ -2647,7 +2646,7 @@ fallback:
 		return err;
 }
 
-static loff_t fuse_file_llseek(struct file *file, loff_t offset, int whence)
+loff_t fuse_file_llseek(struct file *file, loff_t offset, int whence)
 {
 	loff_t retval;
 	struct inode *inode = file_inode(file);
@@ -2922,8 +2921,8 @@ static int fuse_writeback_range(struct inode *inode, loff_t start, loff_t end)
 	return err;
 }
 
-static long fuse_file_fallocate(struct file *file, int mode, loff_t offset,
-				loff_t length)
+long fuse_file_fallocate(struct file *file, int mode, loff_t offset,
+			 loff_t length)
 {
 	struct fuse_file *ff = file->private_data;
 	struct inode *inode = file_inode(file);
@@ -3146,9 +3145,9 @@ out:
 	return err;
 }
 
-static ssize_t fuse_copy_file_range(struct file *src_file, loff_t src_off,
-				    struct file *dst_file, loff_t dst_off,
-				    size_t len, unsigned int flags)
+ssize_t fuse_copy_file_range(struct file *src_file, loff_t src_off,
+			     struct file *dst_file, loff_t dst_off,
+			     size_t len, unsigned int flags)
 {
 	ssize_t ret;
 

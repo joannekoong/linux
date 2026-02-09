@@ -1553,6 +1553,19 @@ struct fuse_file *fuse_file_open(struct fuse_mount *fm, u64 nodeid,
 				 unsigned int open_flags, bool isdir);
 void fuse_file_release(struct inode *inode, struct fuse_file *ff,
 		       unsigned int open_flags, fl_owner_t id, bool isdir);
+/* file operations used by fuse iomap interface */
+loff_t fuse_file_llseek(struct file *file, loff_t offset, int whence);
+int fuse_open(struct inode *inode, struct file *file);
+int fuse_flush(struct file *file, fl_owner_t id);
+int fuse_release(struct inode *inode, struct file *file);
+int fuse_fsync(struct file *file, loff_t start, loff_t end, int datasync);
+int fuse_file_lock(struct file *file, int cmd, struct file_lock *fl);
+int fuse_file_flock(struct file *file, int cmd, struct file_lock *fl);
+long fuse_file_fallocate(struct file *file, int mode, loff_t offset,
+			 loff_t length);
+ssize_t fuse_copy_file_range(struct file *src_file, loff_t src_off,
+			     struct file *dst_file, loff_t dst_off,
+			     size_t len, unsigned int flags);
 
 /* backing.c */
 #ifdef CONFIG_FUSE_PASSTHROUGH
