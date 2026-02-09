@@ -7,6 +7,7 @@
 */
 
 #include "fuse_i.h"
+#include "fuse_bpf_i.h"
 #include "fuse_dev_i.h"
 #include "dev_uring_i.h"
 
@@ -2281,6 +2282,12 @@ static int __init fuse_init(void)
 	res = fuse_sysfs_init();
 	if (res)
 		goto err_dev_cleanup;
+
+#ifdef MODULE
+	res = fuse_bpf_init();
+	if (res)
+		goto err_sysfs_cleanup;
+#endif
 
 	res = fuse_ctl_init();
 	if (res)

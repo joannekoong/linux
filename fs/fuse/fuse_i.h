@@ -995,6 +995,9 @@ struct fuse_conn {
 		/* Request timeout (in jiffies). 0 = no timeout */
 		unsigned int req_timeout;
 	} timeout;
+
+	/* points to bpf progs registered by the server */
+	struct fuse_bpf_ops *bpf_ops;
 };
 
 /*
