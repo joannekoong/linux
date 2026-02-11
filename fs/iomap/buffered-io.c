@@ -95,6 +95,37 @@ static void iomap_set_range_uptodate(struct folio *folio, size_t off,
 		folio_mark_uptodate(folio);
 }
 
+static void iomap_finish_read_range(struct iomap_read_folio_ctx *ctx,
+		size_t off, size_t len, size_t *bytes_submitted)
+{
+	struct folio *folio = ctx->cur_folio;
+	struct iomap_folio_state *ifs = folio->private;
+	unsigned long flags;
+	bool uptodate = false;
+
+	if (folio_test_uptodate(folio))
+		return;
+
+	if (ifs) {
+		spin_lock_irqsave(&ifs->state_lock, flags);
+		if (*bytes_submitted) {
+			ifs->read_bytes_pending -= len;
+			*bytes_submitted += len;
+		}
+		uptodate = ifs_set_range_uptodate(folio, ifs, off, len);
+		if (uptodate)
+			ifs->read_bytes_pending -=
+				folio_size(folio) - *bytes_submitted;
+		spin_unlock_irqrestore(&ifs->state_lock, flags);
+		if (uptodate) {
+			folio_end_read(folio, uptodate);
+			ctx->cur_folio = NULL;
+		}
+	} else {
+		folio_mark_uptodate(folio);
+	}
+}
+
 /*
  * Find the next dirty block in the folio. end_blk is inclusive.
  * If no dirty block is found, this will return end_blk + 1.
@@ -381,7 +412,6 @@ static int iomap_read_inline_data(const struct iomap_iter *iter,
 		ifs_alloc(iter->inode, folio, iter->flags);
 
 	folio_fill_tail(folio, offset, iomap->inline_data, size);
-	iomap_set_range_uptodate(folio, offset, folio_size(folio) - offset);
 	return 0;
 }
 
@@ -505,15 +535,23 @@ static int iomap_read_folio_iter(struct iomap_iter *iter,
 	loff_t pos = iter->pos;
 	loff_t length = iomap_length(iter);
 	struct folio *folio = ctx->cur_folio;
-	size_t folio_len = folio_size(folio);
+	size_t folio_len;
 	size_t poff, plen;
 	loff_t pos_diff;
 	int ret;
+
+	if (!folio)
+		return iomap_iter_advance(iter, length);
+
+	folio_len = folio_size(folio);
 
 	if (iomap->type == IOMAP_INLINE) {
 		ret = iomap_read_inline_data(iter, folio);
 		if (ret)
 			return ret;
+		iomap_finish_read_range(ctx, offset_in_folio(folio, iomap->offset),
+					i_size_read(iter->inode) - iomap->offset,
+					bytes_submitted);
 		return iomap_iter_advance(iter, length);
 	}
 
@@ -538,7 +576,7 @@ static int iomap_read_folio_iter(struct iomap_iter *iter,
 		/* zero post-eof blocks as the page may be mapped */
 		if (iomap_block_needs_zeroing(iter, pos)) {
 			folio_zero_range(folio, poff, plen);
-			iomap_set_range_uptodate(folio, poff, plen);
+			iomap_finish_read_range(ctx, poff, plen, bytes_submitted);
 		} else {
 			if (!*bytes_submitted)
 				iomap_read_init(folio);
@@ -915,10 +953,17 @@ static loff_t iomap_trim_folio_range(struct iomap_iter *iter,
 static int iomap_write_begin_inline(const struct iomap_iter *iter,
 		struct folio *folio)
 {
+	int ret;
+	const struct iomap *iomap = iomap_iter_srcmap(iter);
+
 	/* needs more work for the tailpacking case; disable for now */
-	if (WARN_ON_ONCE(iomap_iter_srcmap(iter)->offset != 0))
+	if (WARN_ON_ONCE(iomap->offset != 0))
 		return -EIO;
-	return iomap_read_inline_data(iter, folio);
+	ret = iomap_read_inline_data(iter, folio);
+	if (!ret)
+		iomap_set_range_uptodate(folio, offset_in_folio(folio, iomap->offset),
+					i_size_read(iter->inode) - iomap->offset);
+	return ret;
 }
 
 /*
