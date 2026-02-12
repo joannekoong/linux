@@ -55,6 +55,12 @@ static int fuse_iomap_begin(struct inode *inode, loff_t pos, loff_t count,
 	 *      issue FUSE_IOMAP_BEGIN request to server
 	 */
 
+	/*
+	 * for testing this on passthrough_hp server, return -ENOSYS here since
+	 * this doesn't actually interact with dax device
+	 */
+	err = -EFAULT;
+
 	return err;
 }
 
@@ -171,6 +177,8 @@ static int fuse_init_iomap_dax(struct fuse_conn *fc,
 	if (!devp)
 		return -ENOMEM;
 
+/* for testing this on passthrough_hp server, comment this out */
+#if 0
 	for (i = 0; i < ndax_devs; i++) {
 		devp[i] = dax_dev_get(devnos[i]);
 		if (!devp[i]) {
@@ -183,6 +191,7 @@ static int fuse_init_iomap_dax(struct fuse_conn *fc,
 		if (err)
 			return err;
 	}
+#endif
 
 	state->dax.ndevs = ndax_devs;
 	state->dax.devp = devp;
