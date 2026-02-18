@@ -15,6 +15,28 @@
 #include "rsrc.h"
 #include "zcrx.h"
 
+static void release_compound_pages(struct page **pages, unsigned long nr_pages)
+{
+	struct page *page;
+	unsigned int nr, i = 0;
+
+	while (nr_pages) {
+		page = pages[i];
+
+		if (!page || WARN_ON_ONCE(page != compound_head(page)))
+			return;
+
+		nr = compound_nr(page);
+		put_page(page);
+
+		if (nr >= nr_pages)
+			return;
+
+		i += nr;
+		nr_pages -= nr;
+	}
+}
+
 static bool io_mem_alloc_compound(struct page **pages, int nr_pages,
 				  size_t size, gfp_t gfp)
 {
@@ -84,22 +106,19 @@ enum {
 	IO_REGION_F_VMAP			= 1,
 	/* memory is provided by user and pinned by the kernel */
 	IO_REGION_F_USER_PROVIDED		= 2,
-	/* only the first page in the array is ref'ed */
-	IO_REGION_F_SINGLE_REF			= 4,
+	/* memory may contain tail pages from compound allocations */
+	IO_REGION_F_COMPOUND_PAGES		= 4,
 };
 
 void io_free_region(struct user_struct *user, struct io_mapped_region *mr)
 {
 	if (mr->pages) {
-		long nr_refs = mr->nr_pages;
-
-		if (mr->flags & IO_REGION_F_SINGLE_REF)
-			nr_refs = 1;
-
 		if (mr->flags & IO_REGION_F_USER_PROVIDED)
-			unpin_user_pages(mr->pages, nr_refs);
+			unpin_user_pages(mr->pages, mr->nr_pages);
+		else if (mr->flags & IO_REGION_F_COMPOUND_PAGES)
+			release_compound_pages(mr->pages, mr->nr_pages);
 		else
-			release_pages(mr->pages, nr_refs);
+			release_pages(mr->pages, mr->nr_pages);
 
 		kvfree(mr->pages);
 	}
@@ -154,28 +173,50 @@ static int io_region_allocate_pages(struct io_mapped_region *mr,
 				    unsigned long mmap_offset)
 {
 	gfp_t gfp = GFP_KERNEL_ACCOUNT | __GFP_ZERO | __GFP_NOWARN;
-	size_t size = io_region_size(mr);
 	unsigned long nr_allocated;
-	struct page **pages;
+	struct page **pages, **cur_pages;
+	unsigned chunk_size, chunk_nr_pages;
+	unsigned int pages_left;
 
 	pages = kvmalloc_array(mr->nr_pages, sizeof(*pages), gfp);
 	if (!pages)
 		return -ENOMEM;
 
-	if (io_mem_alloc_compound(pages, mr->nr_pages, size, gfp)) {
-		mr->flags |= IO_REGION_F_SINGLE_REF;
-		goto done;
+	chunk_size = SZ_2M;
+	chunk_nr_pages = chunk_size >> PAGE_SHIFT;
+	pages_left = mr->nr_pages;
+	cur_pages = pages;
+
+	while (pages_left) {
+		unsigned int nr_pages = min(pages_left,
+					    chunk_nr_pages);
+
+		if (io_mem_alloc_compound(cur_pages, nr_pages,
+					  nr_pages << PAGE_SHIFT, gfp)) {
+			mr->flags |= IO_REGION_F_COMPOUND_PAGES;
+			cur_pages += nr_pages;
+			pages_left -= nr_pages;
+			continue;
+		}
+
+		nr_allocated = alloc_pages_bulk_node(gfp, NUMA_NO_NODE,
+						     nr_pages, cur_pages);
+		if (nr_allocated != nr_pages) {
+			unsigned int total =
+				(cur_pages - pages) + nr_allocated;
+
+			if (mr->flags & IO_REGION_F_COMPOUND_PAGES)
+				release_compound_pages(pages, total);
+			else
+				release_pages(pages, total);
+			kvfree(pages);
+			return -ENOMEM;
+		}
+
+		cur_pages += nr_pages;
+		pages_left -= nr_pages;
 	}
 
-	nr_allocated = alloc_pages_bulk_node(gfp, NUMA_NO_NODE,
-					     mr->nr_pages, pages);
-	if (nr_allocated != mr->nr_pages) {
-		if (nr_allocated)
-			release_pages(pages, nr_allocated);
-		kvfree(pages);
-		return -ENOMEM;
-	}
-done:
 	reg->mmap_offset = mmap_offset;
 	mr->pages = pages;
 	return 0;
