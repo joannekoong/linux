@@ -1000,6 +1000,21 @@ iomap_dio_simple_supported(struct kiocb *iocb, struct iov_iter *iter,
 	return true;
 }
 
+static inline void
+iomap_dio_simple_finish(struct iomap_iter *iomi, const struct iomap_ops *ops,
+		size_t len, size_t written)
+{
+	if (ops->iomap_next) {
+		iomi->iter_start_pos = iomi->pos;
+		iomi->pos += written;
+		iomi->len -= written;
+		ops->iomap_next(iomi, &iomi->iomap, &iomi->srcmap);
+	} else if (ops->iomap_end) {
+		ops->iomap_end(iomi->inode, iomi->pos, len, written,
+			       iomi->flags, &iomi->iomap);
+	}
+}
+
 /*
  * Fast path for small, block-aligned direct I/Os that map to a single
  * contiguous on-disk extent.
@@ -1062,11 +1077,25 @@ iomap_dio_simple(struct kiocb *iocb, struct iov_iter *iter,
 
 	inode_dio_begin(inode);
 
-	ret = ops->iomap_begin(inode, iomi.pos, count, iomi.flags,
-			       &iomi.iomap, &iomi.srcmap);
-	if (ret) {
-		inode_dio_end(inode);
-		return ret;
+	if (ops->iomap_next) {
+		ret = ops->iomap_next(&iomi, &iomi.iomap, &iomi.srcmap);
+		if (ret <= 0) {
+			inode_dio_end(inode);
+			/*
+			 * the first iteration must yield a mapping (>0) or an
+			 * error
+			 */
+			if (WARN_ON_ONCE(!ret))
+				return -EFAULT;
+			return ret;
+		}
+	} else {
+		ret = ops->iomap_begin(inode, iomi.pos, count, iomi.flags,
+				       &iomi.iomap, &iomi.srcmap);
+		if (ret) {
+			inode_dio_end(inode);
+			return ret;
+		}
 	}
 
 	if (iomi.iomap.type != IOMAP_MAPPED ||
@@ -1125,14 +1154,12 @@ iomap_dio_simple(struct kiocb *iocb, struct iov_iter *iter,
 		WRITE_ONCE(iocb->private, bio);
 	}
 
-	if (ops->iomap_end)
-		ops->iomap_end(inode, iomi.pos, count, count, iomi.flags,
-			       &iomi.iomap);
+	iomap_dio_simple_finish(&iomi, ops, count, count);
 
 	if (!wait_for_completion) {
 		bio->bi_end_io = iomap_dio_simple_end_io;
 		submit_bio(bio);
-		trace_iomap_dio_rw_queued(inode, iomi.pos, count);
+		trace_iomap_dio_rw_queued(inode, iocb->ki_pos, count);
 		return -EIOCBQUEUED;
 	}
 
@@ -1144,9 +1171,7 @@ out_bio_release_pages:
 out_bio_put:
 	bio_put(bio);
 out_iomap_end:
-	if (ops->iomap_end)
-		ops->iomap_end(inode, iomi.pos, count, 0, iomi.flags,
-			       &iomi.iomap);
+	iomap_dio_simple_finish(&iomi, ops, count, 0);
 	inode_dio_end(inode);
 	return ret;
 }
