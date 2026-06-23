@@ -1,0 +1,324 @@
+=== SRC=/mnt/xfs/src CONN=/sys/fs/fuse/connections/60 gov=performance ===
+0
+Attached 1 probe
+=== ^ gate lf=0 : expect order 0 ===
+
+
+@[9]: 491
+@[0]: 16384
+######## seq_cold_128k lf=0 ########
+  read: IOPS=16.2k, BW=2022MiB/s (2120MB/s)(4096MiB/2026msec)
+  cpu          : usr=1.53%, sys=65.23%, ctx=8887, majf=0, minf=40
+   READ: bw=2022MiB/s (2120MB/s), 2022MiB/s-2022MiB/s (2120MB/s-2120MB/s), io=4096MiB (4295MB), run=2026-2026msec
+  read: IOPS=16.1k, BW=2016MiB/s (2114MB/s)(4096MiB/2032msec)
+  cpu          : usr=1.13%, sys=63.86%, ctx=9164, majf=0, minf=40
+   READ: bw=2016MiB/s (2114MB/s), 2016MiB/s-2016MiB/s (2114MB/s-2114MB/s), io=4096MiB (4295MB), run=2032-2032msec
+  read: IOPS=16.3k, BW=2033MiB/s (2131MB/s)(4096MiB/2015msec)
+  cpu          : usr=1.19%, sys=63.56%, ctx=9251, majf=0, minf=40
+   READ: bw=2033MiB/s (2131MB/s), 2033MiB/s-2033MiB/s (2131MB/s-2131MB/s), io=4096MiB (4295MB), run=2015-2015msec
+  read: IOPS=16.2k, BW=2030MiB/s (2128MB/s)(4096MiB/2018msec)
+  cpu          : usr=1.24%, sys=63.56%, ctx=9194, majf=0, minf=40
+   READ: bw=2030MiB/s (2128MB/s), 2030MiB/s-2030MiB/s (2128MB/s-2128MB/s), io=4096MiB (4295MB), run=2018-2018msec
+  read: IOPS=16.3k, BW=2035MiB/s (2134MB/s)(4096MiB/2013msec)
+  cpu          : usr=1.04%, sys=63.32%, ctx=9178, majf=0, minf=40
+   READ: bw=2035MiB/s (2134MB/s), 2035MiB/s-2035MiB/s (2134MB/s-2134MB/s), io=4096MiB (4295MB), run=2013-2013msec
+  read: IOPS=16.1k, BW=2007MiB/s (2104MB/s)(4096MiB/2041msec)
+  cpu          : usr=1.47%, sys=63.33%, ctx=8966, majf=0, minf=40
+   READ: bw=2007MiB/s (2104MB/s), 2007MiB/s-2007MiB/s (2104MB/s-2104MB/s), io=4096MiB (4295MB), run=2041-2041msec
+  read: IOPS=16.2k, BW=2029MiB/s (2127MB/s)(4096MiB/2019msec)
+  cpu          : usr=1.49%, sys=63.18%, ctx=8879, majf=0, minf=40
+   READ: bw=2029MiB/s (2127MB/s), 2029MiB/s-2029MiB/s (2127MB/s-2127MB/s), io=4096MiB (4295MB), run=2019-2019msec
+  read: IOPS=16.2k, BW=2020MiB/s (2118MB/s)(4096MiB/2028msec)
+  cpu          : usr=1.23%, sys=62.95%, ctx=8988, majf=0, minf=40
+   READ: bw=2020MiB/s (2118MB/s), 2020MiB/s-2020MiB/s (2118MB/s-2118MB/s), io=4096MiB (4295MB), run=2028-2028msec
+  read: IOPS=16.4k, BW=2047MiB/s (2146MB/s)(4096MiB/2001msec)
+  cpu          : usr=1.05%, sys=63.70%, ctx=9012, majf=0, minf=39
+   READ: bw=2047MiB/s (2146MB/s), 2047MiB/s-2047MiB/s (2146MB/s-2146MB/s), io=4096MiB (4295MB), run=2001-2001msec
+  read: IOPS=16.3k, BW=2041MiB/s (2140MB/s)(4096MiB/2007msec)
+  cpu          : usr=1.55%, sys=63.66%, ctx=8904, majf=0, minf=40
+   READ: bw=2041MiB/s (2140MB/s), 2041MiB/s-2041MiB/s (2140MB/s-2140MB/s), io=4096MiB (4295MB), run=2007-2007msec
+######## seq_cold_128k lf=1 ########
+  read: IOPS=17.5k, BW=2187MiB/s (2293MB/s)(4096MiB/1873msec)
+  cpu          : usr=1.50%, sys=30.93%, ctx=14567, majf=0, minf=40
+   READ: bw=2187MiB/s (2293MB/s), 2187MiB/s-2187MiB/s (2293MB/s-2293MB/s), io=4096MiB (4295MB), run=1873-1873msec
+  read: IOPS=16.8k, BW=2097MiB/s (2199MB/s)(4096MiB/1953msec)
+  cpu          : usr=1.69%, sys=29.66%, ctx=15878, majf=0, minf=39
+   READ: bw=2097MiB/s (2199MB/s), 2097MiB/s-2097MiB/s (2199MB/s-2199MB/s), io=4096MiB (4295MB), run=1953-1953msec
+  read: IOPS=18.0k, BW=2248MiB/s (2357MB/s)(4096MiB/1822msec)
+  cpu          : usr=1.15%, sys=33.28%, ctx=13931, majf=0, minf=41
+   READ: bw=2248MiB/s (2357MB/s), 2248MiB/s-2248MiB/s (2357MB/s-2357MB/s), io=4096MiB (4295MB), run=1822-1822msec
+  read: IOPS=17.5k, BW=2193MiB/s (2299MB/s)(4096MiB/1868msec)
+  cpu          : usr=1.45%, sys=31.71%, ctx=14487, majf=0, minf=40
+   READ: bw=2193MiB/s (2299MB/s), 2193MiB/s-2193MiB/s (2299MB/s-2299MB/s), io=4096MiB (4295MB), run=1868-1868msec
+  read: IOPS=18.0k, BW=2244MiB/s (2353MB/s)(4096MiB/1825msec)
+  cpu          : usr=1.48%, sys=32.02%, ctx=14026, majf=0, minf=39
+   READ: bw=2244MiB/s (2353MB/s), 2244MiB/s-2244MiB/s (2353MB/s-2353MB/s), io=4096MiB (4295MB), run=1825-1825msec
+  read: IOPS=17.1k, BW=2139MiB/s (2243MB/s)(4096MiB/1915msec)
+  cpu          : usr=1.25%, sys=30.98%, ctx=15124, majf=0, minf=39
+   READ: bw=2139MiB/s (2243MB/s), 2139MiB/s-2139MiB/s (2243MB/s-2243MB/s), io=4096MiB (4295MB), run=1915-1915msec
+  read: IOPS=17.0k, BW=2121MiB/s (2224MB/s)(4096MiB/1931msec)
+  cpu          : usr=1.76%, sys=30.52%, ctx=15448, majf=0, minf=40
+   READ: bw=2121MiB/s (2224MB/s), 2121MiB/s-2121MiB/s (2224MB/s-2224MB/s), io=4096MiB (4295MB), run=1931-1931msec
+  read: IOPS=17.8k, BW=2222MiB/s (2330MB/s)(4096MiB/1843msec)
+  cpu          : usr=1.95%, sys=31.87%, ctx=14187, majf=0, minf=39
+   READ: bw=2222MiB/s (2330MB/s), 2222MiB/s-2222MiB/s (2330MB/s-2330MB/s), io=4096MiB (4295MB), run=1843-1843msec
+  read: IOPS=17.2k, BW=2156MiB/s (2261MB/s)(4096MiB/1900msec)
+  cpu          : usr=0.90%, sys=31.28%, ctx=15478, majf=0, minf=40
+   READ: bw=2156MiB/s (2261MB/s), 2156MiB/s-2156MiB/s (2261MB/s-2261MB/s), io=4096MiB (4295MB), run=1900-1900msec
+  read: IOPS=17.0k, BW=2130MiB/s (2233MB/s)(4096MiB/1923msec)
+  cpu          : usr=0.88%, sys=30.33%, ctx=14980, majf=0, minf=39
+   READ: bw=2130MiB/s (2233MB/s), 2130MiB/s-2130MiB/s (2233MB/s-2233MB/s), io=4096MiB (4295MB), run=1923-1923msec
+######## seq_warm_128k lf=0 ########
+  read: IOPS=19.6k, BW=2451MiB/s (2570MB/s)(47.9GiB/20001msec)
+  cpu          : usr=1.09%, sys=97.84%, ctx=10599, majf=0, minf=36
+   READ: bw=2451MiB/s (2570MB/s), 2451MiB/s-2451MiB/s (2570MB/s-2570MB/s), io=47.9GiB (51.4GB), run=20001-20001msec
+  read: IOPS=19.0k, BW=2373MiB/s (2488MB/s)(46.3GiB/20001msec)
+  cpu          : usr=0.97%, sys=94.96%, ctx=17186, majf=0, minf=36
+   READ: bw=2373MiB/s (2488MB/s), 2373MiB/s-2373MiB/s (2488MB/s-2488MB/s), io=46.3GiB (49.8GB), run=20001-20001msec
+  read: IOPS=19.5k, BW=2443MiB/s (2562MB/s)(47.7GiB/20001msec)
+  cpu          : usr=1.07%, sys=97.06%, ctx=17278, majf=0, minf=36
+   READ: bw=2443MiB/s (2562MB/s), 2443MiB/s-2443MiB/s (2562MB/s-2562MB/s), io=47.7GiB (51.2GB), run=20001-20001msec
+  read: IOPS=19.7k, BW=2461MiB/s (2581MB/s)(48.1GiB/20001msec)
+  cpu          : usr=0.98%, sys=97.19%, ctx=15443, majf=0, minf=36
+   READ: bw=2461MiB/s (2581MB/s), 2461MiB/s-2461MiB/s (2581MB/s-2581MB/s), io=48.1GiB (51.6GB), run=20001-20001msec
+  read: IOPS=19.8k, BW=2473MiB/s (2593MB/s)(48.3GiB/20001msec)
+  cpu          : usr=1.08%, sys=97.09%, ctx=14231, majf=0, minf=36
+   READ: bw=2473MiB/s (2593MB/s), 2473MiB/s-2473MiB/s (2593MB/s-2593MB/s), io=48.3GiB (51.9GB), run=20001-20001msec
+######## seq_warm_128k lf=1 ########
+  read: IOPS=39.3k, BW=4915MiB/s (5154MB/s)(96.0GiB/20001msec)
+  cpu          : usr=2.65%, sys=71.23%, ctx=356953, majf=0, minf=36
+   READ: bw=4915MiB/s (5154MB/s), 4915MiB/s-4915MiB/s (5154MB/s-5154MB/s), io=96.0GiB (103GB), run=20001-20001msec
+  read: IOPS=39.5k, BW=4939MiB/s (5178MB/s)(96.5GiB/20001msec)
+  cpu          : usr=2.83%, sys=70.55%, ctx=360240, majf=0, minf=36
+   READ: bw=4939MiB/s (5178MB/s), 4939MiB/s-4939MiB/s (5178MB/s-5178MB/s), io=96.5GiB (104GB), run=20001-20001msec
+  read: IOPS=39.7k, BW=4963MiB/s (5205MB/s)(96.9GiB/20001msec)
+  cpu          : usr=2.48%, sys=70.16%, ctx=359966, majf=0, minf=36
+   READ: bw=4963MiB/s (5205MB/s), 4963MiB/s-4963MiB/s (5205MB/s-5205MB/s), io=96.9GiB (104GB), run=20001-20001msec
+  read: IOPS=39.6k, BW=4946MiB/s (5186MB/s)(96.6GiB/20001msec)
+  cpu          : usr=3.06%, sys=70.64%, ctx=359971, majf=0, minf=36
+   READ: bw=4946MiB/s (5186MB/s), 4946MiB/s-4946MiB/s (5186MB/s-5186MB/s), io=96.6GiB (104GB), run=20001-20001msec
+  read: IOPS=39.5k, BW=4933MiB/s (5173MB/s)(96.4GiB/20001msec)
+  cpu          : usr=2.58%, sys=71.45%, ctx=360411, majf=0, minf=36
+   READ: bw=4933MiB/s (5173MB/s), 4933MiB/s-4933MiB/s (5173MB/s-5173MB/s), io=96.4GiB (103GB), run=20001-20001msec
+######## seq_cold_1M lf=0 ########
+  read: IOPS=2010, BW=2011MiB/s (2108MB/s)(4096MiB/2037msec)
+  cpu          : usr=0.39%, sys=64.88%, ctx=8957, majf=0, minf=265
+   READ: bw=2011MiB/s (2108MB/s), 2011MiB/s-2011MiB/s (2108MB/s-2108MB/s), io=4096MiB (4295MB), run=2037-2037msec
+  read: IOPS=2026, BW=2027MiB/s (2125MB/s)(4096MiB/2021msec)
+  cpu          : usr=0.40%, sys=64.65%, ctx=8723, majf=0, minf=264
+   READ: bw=2027MiB/s (2125MB/s), 2027MiB/s-2027MiB/s (2125MB/s-2125MB/s), io=4096MiB (4295MB), run=2021-2021msec
+  read: IOPS=1998, BW=1998MiB/s (2095MB/s)(4096MiB/2050msec)
+  cpu          : usr=0.49%, sys=64.37%, ctx=8562, majf=0, minf=263
+   READ: bw=1998MiB/s (2095MB/s), 1998MiB/s-1998MiB/s (2095MB/s-2095MB/s), io=4096MiB (4295MB), run=2050-2050msec
+  read: IOPS=2016, BW=2017MiB/s (2115MB/s)(4096MiB/2031msec)
+  cpu          : usr=0.59%, sys=64.93%, ctx=8516, majf=0, minf=264
+   READ: bw=2017MiB/s (2115MB/s), 2017MiB/s-2017MiB/s (2115MB/s-2115MB/s), io=4096MiB (4295MB), run=2031-2031msec
+  read: IOPS=1999, BW=1999MiB/s (2096MB/s)(4096MiB/2049msec)
+  cpu          : usr=0.39%, sys=64.36%, ctx=8589, majf=0, minf=264
+   READ: bw=1999MiB/s (2096MB/s), 1999MiB/s-1999MiB/s (2096MB/s-2096MB/s), io=4096MiB (4295MB), run=2049-2049msec
+  read: IOPS=1979, BW=1980MiB/s (2076MB/s)(4096MiB/2069msec)
+  cpu          : usr=0.34%, sys=64.22%, ctx=7992, majf=0, minf=265
+   READ: bw=1980MiB/s (2076MB/s), 1980MiB/s-1980MiB/s (2076MB/s-2076MB/s), io=4096MiB (4295MB), run=2069-2069msec
+  read: IOPS=1992, BW=1992MiB/s (2089MB/s)(4096MiB/2056msec)
+  cpu          : usr=0.24%, sys=65.16%, ctx=8244, majf=0, minf=263
+   READ: bw=1992MiB/s (2089MB/s), 1992MiB/s-1992MiB/s (2089MB/s-2089MB/s), io=4096MiB (4295MB), run=2056-2056msec
+  read: IOPS=2006, BW=2007MiB/s (2104MB/s)(4096MiB/2041msec)
+  cpu          : usr=0.54%, sys=64.61%, ctx=8278, majf=0, minf=264
+   READ: bw=2007MiB/s (2104MB/s), 2007MiB/s-2007MiB/s (2104MB/s-2104MB/s), io=4096MiB (4295MB), run=2041-2041msec
+  read: IOPS=1971, BW=1971MiB/s (2067MB/s)(4096MiB/2078msec)
+  cpu          : usr=0.39%, sys=64.56%, ctx=8094, majf=0, minf=264
+   READ: bw=1971MiB/s (2067MB/s), 1971MiB/s-1971MiB/s (2067MB/s-2067MB/s), io=4096MiB (4295MB), run=2078-2078msec
+  read: IOPS=1999, BW=1999MiB/s (2096MB/s)(4096MiB/2049msec)
+  cpu          : usr=0.73%, sys=64.55%, ctx=8305, majf=0, minf=265
+   READ: bw=1999MiB/s (2096MB/s), 1999MiB/s-1999MiB/s (2096MB/s-2096MB/s), io=4096MiB (4295MB), run=2049-2049msec
+######## seq_cold_1M lf=1 ########
+  read: IOPS=2171, BW=2172MiB/s (2277MB/s)(4096MiB/1886msec)
+  cpu          : usr=0.64%, sys=32.63%, ctx=15993, majf=0, minf=265
+   READ: bw=2172MiB/s (2277MB/s), 2172MiB/s-2172MiB/s (2277MB/s-2277MB/s), io=4096MiB (4295MB), run=1886-1886msec
+  read: IOPS=2182, BW=2182MiB/s (2288MB/s)(4096MiB/1877msec)
+  cpu          : usr=0.64%, sys=31.93%, ctx=15286, majf=0, minf=264
+   READ: bw=2182MiB/s (2288MB/s), 2182MiB/s-2182MiB/s (2288MB/s-2288MB/s), io=4096MiB (4295MB), run=1877-1877msec
+  read: IOPS=2184, BW=2185MiB/s (2291MB/s)(4096MiB/1875msec)
+  cpu          : usr=0.75%, sys=32.34%, ctx=14656, majf=0, minf=264
+   READ: bw=2185MiB/s (2291MB/s), 2185MiB/s-2185MiB/s (2291MB/s-2291MB/s), io=4096MiB (4295MB), run=1875-1875msec
+  read: IOPS=2159, BW=2159MiB/s (2264MB/s)(4096MiB/1897msec)
+  cpu          : usr=0.95%, sys=31.54%, ctx=16033, majf=0, minf=263
+   READ: bw=2159MiB/s (2264MB/s), 2159MiB/s-2159MiB/s (2264MB/s-2264MB/s), io=4096MiB (4295MB), run=1897-1897msec
+  read: IOPS=2185, BW=2186MiB/s (2292MB/s)(4096MiB/1874msec)
+  cpu          : usr=0.59%, sys=32.46%, ctx=15446, majf=0, minf=264
+   READ: bw=2186MiB/s (2292MB/s), 2186MiB/s-2186MiB/s (2292MB/s-2292MB/s), io=4096MiB (4295MB), run=1874-1874msec
+  read: IOPS=2191, BW=2192MiB/s (2298MB/s)(4096MiB/1869msec)
+  cpu          : usr=0.70%, sys=32.66%, ctx=14566, majf=0, minf=265
+   READ: bw=2192MiB/s (2298MB/s), 2192MiB/s-2192MiB/s (2298MB/s-2298MB/s), io=4096MiB (4295MB), run=1869-1869msec
+  read: IOPS=2179, BW=2180MiB/s (2286MB/s)(4096MiB/1879msec)
+  cpu          : usr=0.80%, sys=32.53%, ctx=15492, majf=0, minf=263
+   READ: bw=2180MiB/s (2286MB/s), 2180MiB/s-2180MiB/s (2286MB/s-2286MB/s), io=4096MiB (4295MB), run=1879-1879msec
+  read: IOPS=2204, BW=2205MiB/s (2312MB/s)(4096MiB/1858msec)
+  cpu          : usr=0.43%, sys=32.90%, ctx=14229, majf=0, minf=263
+   READ: bw=2205MiB/s (2312MB/s), 2205MiB/s-2205MiB/s (2312MB/s-2312MB/s), io=4096MiB (4295MB), run=1858-1858msec
+  read: IOPS=2171, BW=2172MiB/s (2277MB/s)(4096MiB/1886msec)
+  cpu          : usr=0.74%, sys=32.04%, ctx=16165, majf=0, minf=263
+   READ: bw=2172MiB/s (2277MB/s), 2172MiB/s-2172MiB/s (2277MB/s-2277MB/s), io=4096MiB (4295MB), run=1886-1886msec
+  read: IOPS=2160, BW=2160MiB/s (2265MB/s)(4096MiB/1896msec)
+  cpu          : usr=0.58%, sys=31.82%, ctx=15655, majf=0, minf=263
+   READ: bw=2160MiB/s (2265MB/s), 2160MiB/s-2160MiB/s (2265MB/s-2265MB/s), io=4096MiB (4295MB), run=1896-1896msec
+######## seq_warm_1M lf=0 ########
+  read: IOPS=2464, BW=2465MiB/s (2585MB/s)(48.1GiB/20001msec)
+  cpu          : usr=0.24%, sys=98.92%, ctx=5127, majf=0, minf=36
+   READ: bw=2465MiB/s (2585MB/s), 2465MiB/s-2465MiB/s (2585MB/s-2585MB/s), io=48.1GiB (51.7GB), run=20001-20001msec
+  read: IOPS=2326, BW=2326MiB/s (2439MB/s)(45.4GiB/20001msec)
+  cpu          : usr=0.26%, sys=93.28%, ctx=9119, majf=0, minf=36
+   READ: bw=2326MiB/s (2439MB/s), 2326MiB/s-2326MiB/s (2439MB/s-2439MB/s), io=45.4GiB (48.8GB), run=20001-20001msec
+  read: IOPS=2374, BW=2374MiB/s (2490MB/s)(46.4GiB/20001msec)
+  cpu          : usr=0.34%, sys=97.25%, ctx=10259, majf=0, minf=36
+   READ: bw=2374MiB/s (2490MB/s), 2374MiB/s-2374MiB/s (2490MB/s-2490MB/s), io=46.4GiB (49.8GB), run=20001-20001msec
+  read: IOPS=2340, BW=2340MiB/s (2454MB/s)(45.7GiB/20001msec)
+  cpu          : usr=0.27%, sys=97.11%, ctx=10682, majf=0, minf=36
+   READ: bw=2340MiB/s (2454MB/s), 2340MiB/s-2340MiB/s (2454MB/s-2454MB/s), io=45.7GiB (49.1GB), run=20001-20001msec
+  read: IOPS=2335, BW=2335MiB/s (2449MB/s)(45.6GiB/20001msec)
+  cpu          : usr=0.36%, sys=97.45%, ctx=6757, majf=0, minf=36
+   READ: bw=2335MiB/s (2449MB/s), 2335MiB/s-2335MiB/s (2449MB/s-2449MB/s), io=45.6GiB (49.0GB), run=20001-20001msec
+######## seq_warm_1M lf=1 ########
+  read: IOPS=5626, BW=5626MiB/s (5899MB/s)(110GiB/20001msec)
+  cpu          : usr=1.56%, sys=80.91%, ctx=157675, majf=0, minf=36
+   READ: bw=5626MiB/s (5899MB/s), 5626MiB/s-5626MiB/s (5899MB/s-5899MB/s), io=110GiB (118GB), run=20001-20001msec
+  read: IOPS=5635, BW=5636MiB/s (5909MB/s)(110GiB/20001msec)
+  cpu          : usr=1.67%, sys=80.39%, ctx=166280, majf=0, minf=36
+   READ: bw=5636MiB/s (5909MB/s), 5636MiB/s-5636MiB/s (5909MB/s-5909MB/s), io=110GiB (118GB), run=20001-20001msec
+  read: IOPS=5668, BW=5668MiB/s (5943MB/s)(111GiB/20001msec)
+  cpu          : usr=1.47%, sys=80.77%, ctx=164144, majf=0, minf=36
+   READ: bw=5668MiB/s (5943MB/s), 5668MiB/s-5668MiB/s (5943MB/s-5943MB/s), io=111GiB (119GB), run=20001-20001msec
+  read: IOPS=5638, BW=5639MiB/s (5913MB/s)(110GiB/20001msec)
+  cpu          : usr=1.69%, sys=81.14%, ctx=151446, majf=0, minf=36
+   READ: bw=5639MiB/s (5913MB/s), 5639MiB/s-5639MiB/s (5913MB/s-5913MB/s), io=110GiB (118GB), run=20001-20001msec
+  read: IOPS=5689, BW=5689MiB/s (5966MB/s)(111GiB/20001msec)
+  cpu          : usr=1.80%, sys=80.39%, ctx=166043, majf=0, minf=36
+   READ: bw=5689MiB/s (5966MB/s), 5689MiB/s-5689MiB/s (5966MB/s-5966MB/s), io=111GiB (119GB), run=20001-20001msec
+######## rand_cold_4k lf=0 ########
+  read: IOPS=9281, BW=36.3MiB/s (38.0MB/s)(725MiB/20001msec)
+  cpu          : usr=1.35%, sys=6.87%, ctx=185645, majf=0, minf=36
+   READ: bw=36.3MiB/s (38.0MB/s), 36.3MiB/s-36.3MiB/s (38.0MB/s-38.0MB/s), io=725MiB (760MB), run=20001-20001msec
+  read: IOPS=9323, BW=36.4MiB/s (38.2MB/s)(728MiB/20001msec)
+  cpu          : usr=1.30%, sys=6.97%, ctx=186477, majf=0, minf=36
+   READ: bw=36.4MiB/s (38.2MB/s), 36.4MiB/s-36.4MiB/s (38.2MB/s-38.2MB/s), io=728MiB (764MB), run=20001-20001msec
+  read: IOPS=9403, BW=36.7MiB/s (38.5MB/s)(735MiB/20001msec)
+  cpu          : usr=1.79%, sys=6.93%, ctx=188086, majf=0, minf=36
+   READ: bw=36.7MiB/s (38.5MB/s), 36.7MiB/s-36.7MiB/s (38.5MB/s-38.5MB/s), io=735MiB (770MB), run=20001-20001msec
+  read: IOPS=9549, BW=37.3MiB/s (39.1MB/s)(746MiB/20001msec)
+  cpu          : usr=1.43%, sys=7.03%, ctx=190995, majf=0, minf=36
+   READ: bw=37.3MiB/s (39.1MB/s), 37.3MiB/s-37.3MiB/s (39.1MB/s-39.1MB/s), io=746MiB (782MB), run=20001-20001msec
+  read: IOPS=9516, BW=37.2MiB/s (39.0MB/s)(744MiB/20001msec)
+  cpu          : usr=1.35%, sys=7.11%, ctx=190346, majf=0, minf=36
+   READ: bw=37.2MiB/s (39.0MB/s), 37.2MiB/s-37.2MiB/s (39.0MB/s-39.0MB/s), io=744MiB (780MB), run=20001-20001msec
+######## rand_cold_4k lf=1 ########
+  read: IOPS=9419, BW=36.8MiB/s (38.6MB/s)(736MiB/20001msec)
+  cpu          : usr=1.54%, sys=7.00%, ctx=188404, majf=0, minf=36
+   READ: bw=36.8MiB/s (38.6MB/s), 36.8MiB/s-36.8MiB/s (38.6MB/s-38.6MB/s), io=736MiB (772MB), run=20001-20001msec
+  read: IOPS=9447, BW=36.9MiB/s (38.7MB/s)(738MiB/20001msec)
+  cpu          : usr=1.46%, sys=6.72%, ctx=188953, majf=0, minf=36
+   READ: bw=36.9MiB/s (38.7MB/s), 36.9MiB/s-36.9MiB/s (38.7MB/s-38.7MB/s), io=738MiB (774MB), run=20001-20001msec
+  read: IOPS=9388, BW=36.7MiB/s (38.5MB/s)(733MiB/20001msec)
+  cpu          : usr=1.52%, sys=7.08%, ctx=187771, majf=0, minf=36
+   READ: bw=36.7MiB/s (38.5MB/s), 36.7MiB/s-36.7MiB/s (38.5MB/s-38.5MB/s), io=733MiB (769MB), run=20001-20001msec
+  read: IOPS=9468, BW=37.0MiB/s (38.8MB/s)(740MiB/20001msec)
+  cpu          : usr=1.81%, sys=7.01%, ctx=189386, majf=0, minf=36
+   READ: bw=37.0MiB/s (38.8MB/s), 37.0MiB/s-37.0MiB/s (38.8MB/s-38.8MB/s), io=740MiB (776MB), run=20001-20001msec
+  read: IOPS=9317, BW=36.4MiB/s (38.2MB/s)(728MiB/20001msec)
+  cpu          : usr=1.95%, sys=6.91%, ctx=186363, majf=0, minf=36
+   READ: bw=36.4MiB/s (38.2MB/s), 36.4MiB/s-36.4MiB/s (38.2MB/s-38.2MB/s), io=728MiB (763MB), run=20001-20001msec
+######## rand_warm_4k lf=0 ########
+  read: IOPS=57.2k, BW=224MiB/s (234MB/s)(4472MiB/20001msec)
+  cpu          : usr=9.80%, sys=32.54%, ctx=1144837, majf=0, minf=37
+   READ: bw=224MiB/s (234MB/s), 224MiB/s-224MiB/s (234MB/s-234MB/s), io=4472MiB (4689MB), run=20001-20001msec
+  read: IOPS=56.4k, BW=220MiB/s (231MB/s)(4405MiB/20001msec)
+  cpu          : usr=6.44%, sys=32.31%, ctx=1127799, majf=0, minf=36
+   READ: bw=220MiB/s (231MB/s), 220MiB/s-220MiB/s (231MB/s-231MB/s), io=4405MiB (4619MB), run=20001-20001msec
+  read: IOPS=57.5k, BW=225MiB/s (236MB/s)(4496MiB/20001msec)
+  cpu          : usr=6.41%, sys=32.80%, ctx=1151138, majf=0, minf=36
+   READ: bw=225MiB/s (236MB/s), 225MiB/s-225MiB/s (236MB/s-236MB/s), io=4496MiB (4715MB), run=20001-20001msec
+  read: IOPS=58.7k, BW=229MiB/s (241MB/s)(4587MiB/20001msec)
+  cpu          : usr=6.38%, sys=33.65%, ctx=1174460, majf=0, minf=36
+   READ: bw=229MiB/s (241MB/s), 229MiB/s-229MiB/s (241MB/s-241MB/s), io=4587MiB (4810MB), run=20001-20001msec
+  read: IOPS=58.1k, BW=227MiB/s (238MB/s)(4537MiB/20001msec)
+  cpu          : usr=6.40%, sys=33.13%, ctx=1161447, majf=0, minf=36
+   READ: bw=227MiB/s (238MB/s), 227MiB/s-227MiB/s (238MB/s-238MB/s), io=4537MiB (4757MB), run=20001-20001msec
+######## rand_warm_4k lf=1 ########
+  read: IOPS=57.3k, BW=224MiB/s (235MB/s)(4479MiB/20001msec)
+  cpu          : usr=5.89%, sys=32.58%, ctx=1146628, majf=0, minf=36
+   READ: bw=224MiB/s (235MB/s), 224MiB/s-224MiB/s (235MB/s-235MB/s), io=4479MiB (4696MB), run=20001-20001msec
+  read: IOPS=57.2k, BW=224MiB/s (234MB/s)(4472MiB/20001msec)
+  cpu          : usr=6.64%, sys=33.43%, ctx=1144796, majf=0, minf=36
+   READ: bw=224MiB/s (234MB/s), 224MiB/s-224MiB/s (234MB/s-234MB/s), io=4472MiB (4689MB), run=20001-20001msec
+  read: IOPS=58.5k, BW=229MiB/s (240MB/s)(4573MiB/20001msec)
+  cpu          : usr=6.45%, sys=33.05%, ctx=1170764, majf=0, minf=36
+   READ: bw=229MiB/s (240MB/s), 229MiB/s-229MiB/s (240MB/s-240MB/s), io=4573MiB (4795MB), run=20001-20001msec
+  read: IOPS=58.7k, BW=229MiB/s (241MB/s)(4588MiB/20001msec)
+  cpu          : usr=6.43%, sys=33.50%, ctx=1174672, majf=0, minf=36
+   READ: bw=229MiB/s (241MB/s), 229MiB/s-229MiB/s (241MB/s-241MB/s), io=4588MiB (4811MB), run=20001-20001msec
+  read: IOPS=59.1k, BW=231MiB/s (242MB/s)(4620MiB/20001msec)
+  cpu          : usr=7.31%, sys=32.67%, ctx=1182866, majf=0, minf=36
+   READ: bw=231MiB/s (242MB/s), 231MiB/s-231MiB/s (242MB/s-242MB/s), io=4620MiB (4845MB), run=20001-20001msec
+######## rand_cold_128k lf=0 ########
+  read: IOPS=3104, BW=388MiB/s (407MB/s)(7761MiB/20001msec)
+  cpu          : usr=0.44%, sys=21.04%, ctx=124038, majf=0, minf=36
+   READ: bw=388MiB/s (407MB/s), 388MiB/s-388MiB/s (407MB/s-407MB/s), io=7761MiB (8138MB), run=20001-20001msec
+  read: IOPS=3139, BW=392MiB/s (412MB/s)(7850MiB/20001msec)
+  cpu          : usr=0.40%, sys=20.46%, ctx=125479, majf=0, minf=36
+   READ: bw=392MiB/s (412MB/s), 392MiB/s-392MiB/s (412MB/s-412MB/s), io=7850MiB (8231MB), run=20001-20001msec
+  read: IOPS=3136, BW=392MiB/s (411MB/s)(7842MiB/20001msec)
+  cpu          : usr=0.47%, sys=20.48%, ctx=125330, majf=0, minf=36
+   READ: bw=392MiB/s (411MB/s), 392MiB/s-392MiB/s (411MB/s-411MB/s), io=7842MiB (8223MB), run=20001-20001msec
+  read: IOPS=3113, BW=389MiB/s (408MB/s)(7785MiB/20001msec)
+  cpu          : usr=0.49%, sys=20.36%, ctx=124394, majf=0, minf=36
+   READ: bw=389MiB/s (408MB/s), 389MiB/s-389MiB/s (408MB/s-408MB/s), io=7785MiB (8163MB), run=20001-20001msec
+  read: IOPS=3109, BW=389MiB/s (408MB/s)(7773MiB/20001msec)
+  cpu          : usr=0.45%, sys=20.29%, ctx=124227, majf=0, minf=36
+   READ: bw=389MiB/s (408MB/s), 389MiB/s-389MiB/s (408MB/s-408MB/s), io=7773MiB (8151MB), run=20001-20001msec
+######## rand_cold_128k lf=1 ########
+  read: IOPS=3069, BW=384MiB/s (402MB/s)(7675MiB/20001msec)
+  cpu          : usr=0.50%, sys=20.30%, ctx=122686, majf=0, minf=36
+   READ: bw=384MiB/s (402MB/s), 384MiB/s-384MiB/s (402MB/s-402MB/s), io=7675MiB (8048MB), run=20001-20001msec
+  read: IOPS=3090, BW=386MiB/s (405MB/s)(7728MiB/20001msec)
+  cpu          : usr=0.44%, sys=20.39%, ctx=123536, majf=0, minf=36
+   READ: bw=386MiB/s (405MB/s), 386MiB/s-386MiB/s (405MB/s-405MB/s), io=7728MiB (8103MB), run=20001-20001msec
+  read: IOPS=3145, BW=393MiB/s (412MB/s)(7864MiB/20001msec)
+  cpu          : usr=0.43%, sys=19.80%, ctx=125658, majf=0, minf=37
+   READ: bw=393MiB/s (412MB/s), 393MiB/s-393MiB/s (412MB/s-412MB/s), io=7864MiB (8246MB), run=20001-20001msec
+  read: IOPS=3112, BW=389MiB/s (408MB/s)(7782MiB/20001msec)
+  cpu          : usr=0.49%, sys=20.20%, ctx=124362, majf=0, minf=36
+   READ: bw=389MiB/s (408MB/s), 389MiB/s-389MiB/s (408MB/s-408MB/s), io=7782MiB (8159MB), run=20001-20001msec
+  read: IOPS=3114, BW=389MiB/s (408MB/s)(7786MiB/20001msec)
+  cpu          : usr=0.50%, sys=20.05%, ctx=124396, majf=0, minf=36
+   READ: bw=389MiB/s (408MB/s), 389MiB/s-389MiB/s (408MB/s-408MB/s), io=7786MiB (8164MB), run=20001-20001msec
+######## rand_warm_128k lf=0 ########
+  read: IOPS=9808, BW=1226MiB/s (1286MB/s)(24.3GiB/20304msec)
+  cpu          : usr=1.24%, sys=55.66%, ctx=199584, majf=0, minf=36
+   READ: bw=1226MiB/s (1286MB/s), 1226MiB/s-1226MiB/s (1286MB/s-1286MB/s), io=24.3GiB (26.1GB), run=20304-20304msec
+  read: IOPS=9826, BW=1228MiB/s (1288MB/s)(24.0GiB/20001msec)
+  cpu          : usr=1.23%, sys=53.99%, ctx=196986, majf=0, minf=36
+   READ: bw=1228MiB/s (1288MB/s), 1228MiB/s-1228MiB/s (1288MB/s-1288MB/s), io=24.0GiB (25.8GB), run=20001-20001msec
+  read: IOPS=10.1k, BW=1258MiB/s (1319MB/s)(24.6GiB/20001msec)
+  cpu          : usr=1.11%, sys=57.05%, ctx=201822, majf=0, minf=36
+   READ: bw=1258MiB/s (1319MB/s), 1258MiB/s-1258MiB/s (1319MB/s-1319MB/s), io=24.6GiB (26.4GB), run=20001-20001msec
+  read: IOPS=10.3k, BW=1287MiB/s (1349MB/s)(25.1GiB/20001msec)
+  cpu          : usr=1.13%, sys=56.16%, ctx=206289, majf=0, minf=36
+   READ: bw=1287MiB/s (1349MB/s), 1287MiB/s-1287MiB/s (1349MB/s-1349MB/s), io=25.1GiB (27.0GB), run=20001-20001msec
+  read: IOPS=10.2k, BW=1278MiB/s (1340MB/s)(25.0GiB/20001msec)
+  cpu          : usr=1.08%, sys=56.20%, ctx=204863, majf=0, minf=36
+   READ: bw=1278MiB/s (1340MB/s), 1278MiB/s-1278MiB/s (1340MB/s-1340MB/s), io=25.0GiB (26.8GB), run=20001-20001msec
+######## rand_warm_128k lf=1 ########
+  read: IOPS=9952, BW=1244MiB/s (1305MB/s)(24.3GiB/20001msec)
+  cpu          : usr=1.30%, sys=54.45%, ctx=199441, majf=0, minf=36
+   READ: bw=1244MiB/s (1305MB/s), 1244MiB/s-1244MiB/s (1305MB/s-1305MB/s), io=24.3GiB (26.1GB), run=20001-20001msec
+  read: IOPS=8882, BW=1110MiB/s (1164MB/s)(21.7GiB/20001msec)
+  cpu          : usr=1.04%, sys=50.43%, ctx=178089, majf=0, minf=36
+   READ: bw=1110MiB/s (1164MB/s), 1110MiB/s-1110MiB/s (1164MB/s-1164MB/s), io=21.7GiB (23.3GB), run=20001-20001msec
+  read: IOPS=10.2k, BW=1281MiB/s (1344MB/s)(25.0GiB/20001msec)
+  cpu          : usr=1.13%, sys=55.84%, ctx=205444, majf=0, minf=36
+   READ: bw=1281MiB/s (1344MB/s), 1281MiB/s-1281MiB/s (1344MB/s-1344MB/s), io=25.0GiB (26.9GB), run=20001-20001msec
+  read: IOPS=10.3k, BW=1293MiB/s (1355MB/s)(25.2GiB/20001msec)
+  cpu          : usr=1.15%, sys=55.93%, ctx=207227, majf=0, minf=36
+   READ: bw=1293MiB/s (1355MB/s), 1293MiB/s-1293MiB/s (1355MB/s-1355MB/s), io=25.2GiB (27.1GB), run=20001-20001msec
+  read: IOPS=10.2k, BW=1270MiB/s (1331MB/s)(24.8GiB/20001msec)
+  cpu          : usr=1.28%, sys=55.98%, ctx=203583, majf=0, minf=36
+   READ: bw=1270MiB/s (1331MB/s), 1270MiB/s-1270MiB/s (1331MB/s-1331MB/s), io=24.8GiB (26.6GB), run=20001-20001msec

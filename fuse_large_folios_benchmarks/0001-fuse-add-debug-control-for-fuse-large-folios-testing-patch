@@ -1,0 +1,112 @@
+From 6d80e71a0416aea290b368fb913470f878f15ab5 Mon Sep 17 00:00:00 2001
+From: Joanne Koong <joannelkoong@gmail.com>
+Date: Sun, 21 Jun 2026 08:45:35 -0700
+Subject: [PATCH] fuse: add debug control for fuse large folios testing
+
+---
+ fs/fuse/control.c | 47 +++++++++++++++++++++++++++++++++++++++++++++++
+ fs/fuse/file.c    |  2 +-
+ fs/fuse/fuse_i.h  |  2 ++
+ 3 files changed, 50 insertions(+), 1 deletion(-)
+
+diff --git a/fs/fuse/control.c b/fs/fuse/control.c
+index 21ffde596d61..24d5c4a25d2f 100644
+--- a/fs/fuse/control.c
++++ b/fs/fuse/control.c
+@@ -31,6 +31,45 @@ static struct fuse_conn *fuse_ctl_file_conn_get(struct file *file)
+ 	return fc;
+ }
+ 
++static ssize_t fuse_conn_large_folios_write(struct file *file, const char __user *buf,
++				      size_t count, loff_t *ppos)
++{
++	struct fuse_conn *fc;
++	bool val;
++	int err;
++
++	err = kstrtobool_from_user(buf, count, &val);
++	if (err)
++		return err;
++
++	fc = fuse_ctl_file_conn_get(file);
++	if (fc) {
++		fc->large_folios = val;
++		fuse_conn_put(fc);
++	}
++	return count;
++}
++
++static ssize_t fuse_conn_large_folios_read(struct file *file, char __user *buf,
++				      size_t len, loff_t *ppos)
++{
++	struct fuse_conn *fc;
++	unsigned val;
++
++	fc = fuse_ctl_file_conn_get(file);
++	if (!fc)
++		return 0;
++
++	val = fc->large_folios;
++	fuse_conn_put(fc);
++
++	char tmp[32];
++	size_t size = sprintf(tmp, "%u\n", val);
++
++	return simple_read_from_buffer(buf, len, ppos, tmp, size);
++}
++
++
+ static ssize_t fuse_conn_abort_write(struct file *file, const char __user *buf,
+ 				     size_t count, loff_t *ppos)
+ {
+@@ -189,6 +228,12 @@ static const struct file_operations fuse_conn_max_background_ops = {
+ 	.write = fuse_conn_max_background_write,
+ };
+ 
++static const struct file_operations fuse_conn_large_folios_ops = {
++	.open = nonseekable_open,
++	.read = fuse_conn_large_folios_read,
++	.write = fuse_conn_large_folios_write,
++};
++
+ static const struct file_operations fuse_conn_congestion_threshold_ops = {
+ 	.open = nonseekable_open,
+ 	.read = fuse_conn_congestion_threshold_read,
+@@ -265,6 +310,8 @@ int fuse_ctl_add_conn(struct fuse_conn *fc)
+ 				 NULL, &fuse_ctl_abort_ops) ||
+ 	    !fuse_ctl_add_dentry(parent, fc, "max_background", S_IFREG | 0600,
+ 				 NULL, &fuse_conn_max_background_ops) ||
++	    !fuse_ctl_add_dentry(parent, fc, "large_folios", S_IFREG | 0600,
++				 NULL, &fuse_conn_large_folios_ops) ||
+ 	    !fuse_ctl_add_dentry(parent, fc, "congestion_threshold",
+ 				 S_IFREG | 0600, NULL,
+ 				 &fuse_conn_congestion_threshold_ops))
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index 3c9be6d8ede1..71d8edd07c48 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -3137,7 +3137,7 @@ void fuse_init_file_inode(struct inode *inode, unsigned int flags)
+ 	if (IS_ENABLED(CONFIG_FUSE_DAX))
+ 		fuse_dax_inode_init(inode, flags);
+ 
+-	if (!FUSE_IS_DAX(inode)) {
++	if (!FUSE_IS_DAX(inode) && fc->large_folios) {
+ 		unsigned int max_pages = min(min(fc->max_write,
+ 						 fc->max_read) >> PAGE_SHIFT,
+ 					     fc->max_pages);
+diff --git a/fs/fuse/fuse_i.h b/fs/fuse/fuse_i.h
+index 85f738c53122..32a2aeb6a65d 100644
+--- a/fs/fuse/fuse_i.h
++++ b/fs/fuse/fuse_i.h
+@@ -762,6 +762,8 @@ struct fuse_conn {
+ 	/** @backing_files_map: IDR for backing files ids */
+ 	struct idr backing_files_map;
+ #endif
++
++	bool large_folios;
+ };
+ 
+ /*
+-- 
+2.52.0
+

@@ -1,0 +1,196 @@
+=== CONN=/sys/fs/fuse/connections/60 gov=performance ===
+0
+Attached 1 probe
+=== ^ gate lf=0 : expect order 0 ===
+######## seq_write_1M lf=0 ########
+
+
+@[9]: 337
+@[0]: 16384
+  write: IOPS=698, BW=699MiB/s (733MB/s)(4096MiB/5863msec); 0 zone resets
+  cpu          : usr=1.18%, sys=25.73%, ctx=8200, majf=0, minf=7
+  WRITE: bw=699MiB/s (733MB/s), 699MiB/s-699MiB/s (733MB/s-733MB/s), io=4096MiB (4295MB), run=5863-5863msec
+  write: IOPS=694, BW=695MiB/s (729MB/s)(4096MiB/5895msec); 0 zone resets
+  cpu          : usr=1.53%, sys=25.69%, ctx=8200, majf=0, minf=7
+  WRITE: bw=695MiB/s (729MB/s), 695MiB/s-695MiB/s (729MB/s-729MB/s), io=4096MiB (4295MB), run=5895-5895msec
+  write: IOPS=701, BW=701MiB/s (736MB/s)(4096MiB/5839msec); 0 zone resets
+  cpu          : usr=1.30%, sys=25.61%, ctx=8201, majf=0, minf=9
+  WRITE: bw=701MiB/s (736MB/s), 701MiB/s-701MiB/s (736MB/s-736MB/s), io=4096MiB (4295MB), run=5839-5839msec
+  write: IOPS=696, BW=697MiB/s (731MB/s)(4096MiB/5879msec); 0 zone resets
+  cpu          : usr=1.48%, sys=25.42%, ctx=8201, majf=0, minf=9
+  WRITE: bw=697MiB/s (731MB/s), 697MiB/s-697MiB/s (731MB/s-731MB/s), io=4096MiB (4295MB), run=5879-5879msec
+  write: IOPS=695, BW=695MiB/s (729MB/s)(4096MiB/5892msec); 0 zone resets
+  cpu          : usr=1.02%, sys=25.62%, ctx=8201, majf=0, minf=8
+  WRITE: bw=695MiB/s (729MB/s), 695MiB/s-695MiB/s (729MB/s-729MB/s), io=4096MiB (4295MB), run=5892-5892msec
+  write: IOPS=698, BW=698MiB/s (732MB/s)(4096MiB/5865msec); 0 zone resets
+  cpu          : usr=1.24%, sys=25.72%, ctx=8198, majf=0, minf=8
+  WRITE: bw=698MiB/s (732MB/s), 698MiB/s-698MiB/s (732MB/s-732MB/s), io=4096MiB (4295MB), run=5865-5865msec
+  write: IOPS=698, BW=698MiB/s (732MB/s)(4096MiB/5865msec); 0 zone resets
+  cpu          : usr=1.33%, sys=25.56%, ctx=8199, majf=0, minf=7
+  WRITE: bw=698MiB/s (732MB/s), 698MiB/s-698MiB/s (732MB/s-732MB/s), io=4096MiB (4295MB), run=5865-5865msec
+  write: IOPS=698, BW=698MiB/s (732MB/s)(4096MiB/5868msec); 0 zone resets
+  cpu          : usr=1.31%, sys=25.50%, ctx=8200, majf=0, minf=8
+  WRITE: bw=698MiB/s (732MB/s), 698MiB/s-698MiB/s (732MB/s-732MB/s), io=4096MiB (4295MB), run=5868-5868msec
+  write: IOPS=695, BW=695MiB/s (729MB/s)(4096MiB/5890msec); 0 zone resets
+  cpu          : usr=1.26%, sys=25.51%, ctx=8197, majf=0, minf=7
+  WRITE: bw=695MiB/s (729MB/s), 695MiB/s-695MiB/s (729MB/s-729MB/s), io=4096MiB (4295MB), run=5890-5890msec
+  write: IOPS=695, BW=696MiB/s (730MB/s)(4096MiB/5887msec); 0 zone resets
+  cpu          : usr=1.51%, sys=25.72%, ctx=8197, majf=0, minf=9
+  WRITE: bw=696MiB/s (730MB/s), 696MiB/s-696MiB/s (730MB/s-730MB/s), io=4096MiB (4295MB), run=5887-5887msec
+######## seq_write_1M lf=1 ########
+  write: IOPS=689, BW=689MiB/s (723MB/s)(4096MiB/5943msec); 0 zone resets
+  cpu          : usr=1.06%, sys=26.27%, ctx=8198, majf=0, minf=8
+  WRITE: bw=689MiB/s (723MB/s), 689MiB/s-689MiB/s (723MB/s-723MB/s), io=4096MiB (4295MB), run=5943-5943msec
+  write: IOPS=694, BW=694MiB/s (728MB/s)(4096MiB/5900msec); 0 zone resets
+  cpu          : usr=1.27%, sys=25.78%, ctx=8198, majf=0, minf=7
+  WRITE: bw=694MiB/s (728MB/s), 694MiB/s-694MiB/s (728MB/s-728MB/s), io=4096MiB (4295MB), run=5900-5900msec
+  write: IOPS=693, BW=693MiB/s (727MB/s)(4096MiB/5908msec); 0 zone resets
+  cpu          : usr=0.95%, sys=26.07%, ctx=8202, majf=0, minf=8
+  WRITE: bw=693MiB/s (727MB/s), 693MiB/s-693MiB/s (727MB/s-727MB/s), io=4096MiB (4295MB), run=5908-5908msec
+  write: IOPS=698, BW=698MiB/s (732MB/s)(4096MiB/5864msec); 0 zone resets
+  cpu          : usr=1.28%, sys=25.26%, ctx=8203, majf=0, minf=8
+  WRITE: bw=698MiB/s (732MB/s), 698MiB/s-698MiB/s (732MB/s-732MB/s), io=4096MiB (4295MB), run=5864-5864msec
+  write: IOPS=695, BW=695MiB/s (729MB/s)(4096MiB/5893msec); 0 zone resets
+  cpu          : usr=1.39%, sys=25.71%, ctx=8198, majf=0, minf=7
+  WRITE: bw=695MiB/s (729MB/s), 695MiB/s-695MiB/s (729MB/s-729MB/s), io=4096MiB (4295MB), run=5893-5893msec
+  write: IOPS=698, BW=698MiB/s (732MB/s)(4096MiB/5864msec); 0 zone resets
+  cpu          : usr=1.19%, sys=25.53%, ctx=8199, majf=0, minf=7
+  WRITE: bw=698MiB/s (732MB/s), 698MiB/s-698MiB/s (732MB/s-732MB/s), io=4096MiB (4295MB), run=5864-5864msec
+  write: IOPS=697, BW=697MiB/s (731MB/s)(4096MiB/5873msec); 0 zone resets
+  cpu          : usr=1.07%, sys=25.61%, ctx=8202, majf=0, minf=8
+  WRITE: bw=697MiB/s (731MB/s), 697MiB/s-697MiB/s (731MB/s-731MB/s), io=4096MiB (4295MB), run=5873-5873msec
+  write: IOPS=690, BW=691MiB/s (725MB/s)(4096MiB/5928msec); 0 zone resets
+  cpu          : usr=1.01%, sys=26.10%, ctx=8199, majf=0, minf=8
+  WRITE: bw=691MiB/s (725MB/s), 691MiB/s-691MiB/s (725MB/s-725MB/s), io=4096MiB (4295MB), run=5928-5928msec
+  write: IOPS=695, BW=696MiB/s (729MB/s)(4096MiB/5889msec); 0 zone resets
+  cpu          : usr=1.21%, sys=25.80%, ctx=8204, majf=0, minf=8
+  WRITE: bw=696MiB/s (729MB/s), 696MiB/s-696MiB/s (729MB/s-729MB/s), io=4096MiB (4295MB), run=5889-5889msec
+  write: IOPS=699, BW=700MiB/s (734MB/s)(4096MiB/5852msec); 0 zone resets
+  cpu          : usr=1.26%, sys=25.62%, ctx=8206, majf=0, minf=7
+  WRITE: bw=700MiB/s (734MB/s), 700MiB/s-700MiB/s (734MB/s-734MB/s), io=4096MiB (4295MB), run=5852-5852msec
+######## seq_write_128k lf=0 ########
+  write: IOPS=4798, BW=600MiB/s (629MB/s)(4096MiB/6829msec); 0 zone resets
+  cpu          : usr=0.79%, sys=25.01%, ctx=65545, majf=0, minf=7
+  WRITE: bw=600MiB/s (629MB/s), 600MiB/s-600MiB/s (629MB/s-629MB/s), io=4096MiB (4295MB), run=6829-6829msec
+  write: IOPS=4780, BW=598MiB/s (627MB/s)(4096MiB/6854msec); 0 zone resets
+  cpu          : usr=0.82%, sys=25.07%, ctx=65543, majf=0, minf=8
+  WRITE: bw=598MiB/s (627MB/s), 598MiB/s-598MiB/s (627MB/s-627MB/s), io=4096MiB (4295MB), run=6854-6854msec
+  write: IOPS=4757, BW=595MiB/s (624MB/s)(4096MiB/6888msec); 0 zone resets
+  cpu          : usr=1.16%, sys=24.71%, ctx=65544, majf=0, minf=8
+  WRITE: bw=595MiB/s (624MB/s), 595MiB/s-595MiB/s (624MB/s-624MB/s), io=4096MiB (4295MB), run=6888-6888msec
+  write: IOPS=4781, BW=598MiB/s (627MB/s)(4096MiB/6853msec); 0 zone resets
+  cpu          : usr=0.95%, sys=24.97%, ctx=65543, majf=0, minf=8
+  WRITE: bw=598MiB/s (627MB/s), 598MiB/s-598MiB/s (627MB/s-627MB/s), io=4096MiB (4295MB), run=6853-6853msec
+  write: IOPS=4730, BW=591MiB/s (620MB/s)(4096MiB/6927msec); 0 zone resets
+  cpu          : usr=1.04%, sys=24.20%, ctx=65544, majf=0, minf=7
+  WRITE: bw=591MiB/s (620MB/s), 591MiB/s-591MiB/s (620MB/s-620MB/s), io=4096MiB (4295MB), run=6927-6927msec
+  write: IOPS=4760, BW=595MiB/s (624MB/s)(4096MiB/6884msec); 0 zone resets
+  cpu          : usr=0.99%, sys=24.36%, ctx=65540, majf=0, minf=8
+  WRITE: bw=595MiB/s (624MB/s), 595MiB/s-595MiB/s (624MB/s-624MB/s), io=4096MiB (4295MB), run=6884-6884msec
+  write: IOPS=4753, BW=594MiB/s (623MB/s)(4096MiB/6893msec); 0 zone resets
+  cpu          : usr=1.04%, sys=24.94%, ctx=65543, majf=0, minf=8
+  WRITE: bw=594MiB/s (623MB/s), 594MiB/s-594MiB/s (623MB/s-623MB/s), io=4096MiB (4295MB), run=6893-6893msec
+  write: IOPS=4792, BW=599MiB/s (628MB/s)(4096MiB/6837msec); 0 zone resets
+  cpu          : usr=1.26%, sys=24.93%, ctx=65543, majf=0, minf=7
+  WRITE: bw=599MiB/s (628MB/s), 599MiB/s-599MiB/s (628MB/s-628MB/s), io=4096MiB (4295MB), run=6837-6837msec
+  write: IOPS=4715, BW=589MiB/s (618MB/s)(4096MiB/6949msec); 0 zone resets
+  cpu          : usr=1.32%, sys=25.22%, ctx=65544, majf=0, minf=8
+  WRITE: bw=589MiB/s (618MB/s), 589MiB/s-589MiB/s (618MB/s-618MB/s), io=4096MiB (4295MB), run=6949-6949msec
+  write: IOPS=4771, BW=596MiB/s (625MB/s)(4096MiB/6867msec); 0 zone resets
+  cpu          : usr=1.09%, sys=24.80%, ctx=65543, majf=0, minf=7
+  WRITE: bw=596MiB/s (625MB/s), 596MiB/s-596MiB/s (625MB/s-625MB/s), io=4096MiB (4295MB), run=6867-6867msec
+######## seq_write_128k lf=1 ########
+  write: IOPS=4768, BW=596MiB/s (625MB/s)(4096MiB/6872msec); 0 zone resets
+  cpu          : usr=1.00%, sys=24.76%, ctx=65542, majf=0, minf=8
+  WRITE: bw=596MiB/s (625MB/s), 596MiB/s-596MiB/s (625MB/s-625MB/s), io=4096MiB (4295MB), run=6872-6872msec
+  write: IOPS=4780, BW=598MiB/s (627MB/s)(4096MiB/6855msec); 0 zone resets
+  cpu          : usr=1.05%, sys=24.99%, ctx=65546, majf=0, minf=7
+  WRITE: bw=598MiB/s (627MB/s), 598MiB/s-598MiB/s (627MB/s-627MB/s), io=4096MiB (4295MB), run=6855-6855msec
+  write: IOPS=4770, BW=596MiB/s (625MB/s)(4096MiB/6869msec); 0 zone resets
+  cpu          : usr=1.15%, sys=24.77%, ctx=65546, majf=0, minf=8
+  WRITE: bw=596MiB/s (625MB/s), 596MiB/s-596MiB/s (625MB/s-625MB/s), io=4096MiB (4295MB), run=6869-6869msec
+  write: IOPS=4758, BW=595MiB/s (624MB/s)(4096MiB/6886msec); 0 zone resets
+  cpu          : usr=1.03%, sys=25.01%, ctx=65544, majf=0, minf=8
+  WRITE: bw=595MiB/s (624MB/s), 595MiB/s-595MiB/s (624MB/s-624MB/s), io=4096MiB (4295MB), run=6886-6886msec
+  write: IOPS=4773, BW=597MiB/s (626MB/s)(4096MiB/6864msec); 0 zone resets
+  cpu          : usr=1.22%, sys=24.67%, ctx=65546, majf=0, minf=7
+  WRITE: bw=597MiB/s (626MB/s), 597MiB/s-597MiB/s (626MB/s-626MB/s), io=4096MiB (4295MB), run=6864-6864msec
+  write: IOPS=4793, BW=599MiB/s (628MB/s)(4096MiB/6836msec); 0 zone resets
+  cpu          : usr=0.98%, sys=24.77%, ctx=65542, majf=0, minf=7
+  WRITE: bw=599MiB/s (628MB/s), 599MiB/s-599MiB/s (628MB/s-628MB/s), io=4096MiB (4295MB), run=6836-6836msec
+  write: IOPS=4786, BW=598MiB/s (627MB/s)(4096MiB/6846msec); 0 zone resets
+  cpu          : usr=1.23%, sys=24.50%, ctx=65547, majf=0, minf=8
+  WRITE: bw=598MiB/s (627MB/s), 598MiB/s-598MiB/s (627MB/s-627MB/s), io=4096MiB (4295MB), run=6846-6846msec
+  write: IOPS=4738, BW=592MiB/s (621MB/s)(4096MiB/6915msec); 0 zone resets
+  cpu          : usr=1.26%, sys=24.53%, ctx=65542, majf=0, minf=7
+  WRITE: bw=592MiB/s (621MB/s), 592MiB/s-592MiB/s (621MB/s-621MB/s), io=4096MiB (4295MB), run=6915-6915msec
+  write: IOPS=4785, BW=598MiB/s (627MB/s)(4096MiB/6848msec); 0 zone resets
+  cpu          : usr=1.01%, sys=24.80%, ctx=65541, majf=0, minf=8
+  WRITE: bw=598MiB/s (627MB/s), 598MiB/s-598MiB/s (627MB/s-627MB/s), io=4096MiB (4295MB), run=6848-6848msec
+  write: IOPS=4773, BW=597MiB/s (626MB/s)(4096MiB/6864msec); 0 zone resets
+  cpu          : usr=1.11%, sys=24.90%, ctx=65546, majf=0, minf=7
+  WRITE: bw=597MiB/s (626MB/s), 597MiB/s-597MiB/s (626MB/s-626MB/s), io=4096MiB (4295MB), run=6864-6864msec
+######## rand_write_1M lf=0 ########
+  write: IOPS=1155, BW=1156MiB/s (1212MB/s)(26.2GiB/23177msec); 0 zone resets
+  cpu          : usr=2.11%, sys=52.85%, ctx=53912, majf=0, minf=37
+  WRITE: bw=1156MiB/s (1212MB/s), 1156MiB/s-1156MiB/s (1212MB/s-1212MB/s), io=26.2GiB (28.1GB), run=23177-23177msec
+  write: IOPS=1154, BW=1154MiB/s (1211MB/s)(26.1GiB/23174msec); 0 zone resets
+  cpu          : usr=2.11%, sys=52.44%, ctx=53896, majf=0, minf=36
+  WRITE: bw=1154MiB/s (1211MB/s), 1154MiB/s-1154MiB/s (1211MB/s-1211MB/s), io=26.1GiB (28.1GB), run=23174-23174msec
+  write: IOPS=1153, BW=1154MiB/s (1210MB/s)(26.1GiB/23179msec); 0 zone resets
+  cpu          : usr=2.23%, sys=52.66%, ctx=53900, majf=0, minf=36
+  WRITE: bw=1154MiB/s (1210MB/s), 1154MiB/s-1154MiB/s (1210MB/s-1210MB/s), io=26.1GiB (28.0GB), run=23179-23179msec
+  write: IOPS=1162, BW=1163MiB/s (1219MB/s)(26.3GiB/23184msec); 0 zone resets
+  cpu          : usr=2.24%, sys=52.60%, ctx=54346, majf=0, minf=37
+  WRITE: bw=1163MiB/s (1219MB/s), 1163MiB/s-1163MiB/s (1219MB/s-1219MB/s), io=26.3GiB (28.3GB), run=23184-23184msec
+  write: IOPS=1159, BW=1159MiB/s (1216MB/s)(26.3GiB/23193msec); 0 zone resets
+  cpu          : usr=2.27%, sys=52.63%, ctx=54150, majf=0, minf=36
+  WRITE: bw=1159MiB/s (1216MB/s), 1159MiB/s-1159MiB/s (1216MB/s-1216MB/s), io=26.3GiB (28.2GB), run=23193-23193msec
+######## rand_write_1M lf=1 ########
+  write: IOPS=1157, BW=1157MiB/s (1213MB/s)(26.2GiB/23140msec); 0 zone resets
+  cpu          : usr=2.22%, sys=52.92%, ctx=53966, majf=0, minf=36
+  WRITE: bw=1157MiB/s (1213MB/s), 1157MiB/s-1157MiB/s (1213MB/s-1213MB/s), io=26.2GiB (28.1GB), run=23140-23140msec
+  write: IOPS=1162, BW=1163MiB/s (1219MB/s)(26.3GiB/23163msec); 0 zone resets
+  cpu          : usr=2.25%, sys=52.71%, ctx=54249, majf=0, minf=36
+  WRITE: bw=1163MiB/s (1219MB/s), 1163MiB/s-1163MiB/s (1219MB/s-1219MB/s), io=26.3GiB (28.2GB), run=23163-23163msec
+  write: IOPS=1161, BW=1161MiB/s (1217MB/s)(26.3GiB/23184msec); 0 zone resets
+  cpu          : usr=2.17%, sys=52.56%, ctx=54286, majf=0, minf=36
+  WRITE: bw=1161MiB/s (1217MB/s), 1161MiB/s-1161MiB/s (1217MB/s-1217MB/s), io=26.3GiB (28.2GB), run=23184-23184msec
+  write: IOPS=1164, BW=1164MiB/s (1221MB/s)(26.3GiB/23157msec); 0 zone resets
+  cpu          : usr=2.10%, sys=52.87%, ctx=54341, majf=0, minf=37
+  WRITE: bw=1164MiB/s (1221MB/s), 1164MiB/s-1164MiB/s (1221MB/s-1221MB/s), io=26.3GiB (28.3GB), run=23157-23157msec
+  write: IOPS=1165, BW=1165MiB/s (1222MB/s)(26.3GiB/23160msec); 0 zone resets
+  cpu          : usr=2.26%, sys=52.66%, ctx=54428, majf=0, minf=36
+  WRITE: bw=1165MiB/s (1222MB/s), 1165MiB/s-1165MiB/s (1222MB/s-1222MB/s), io=26.3GiB (28.3GB), run=23160-23160msec
+######## rand_write_128k lf=0 ########
+  write: IOPS=7007, BW=876MiB/s (919MB/s)(19.8GiB/23190msec); 0 zone resets
+  cpu          : usr=1.69%, sys=45.14%, ctx=325376, majf=0, minf=36
+  WRITE: bw=876MiB/s (919MB/s), 876MiB/s-876MiB/s (919MB/s-919MB/s), io=19.8GiB (21.3GB), run=23190-23190msec
+  write: IOPS=6983, BW=873MiB/s (915MB/s)(19.7GiB/23167msec); 0 zone resets
+  cpu          : usr=1.66%, sys=45.01%, ctx=323931, majf=0, minf=37
+  WRITE: bw=873MiB/s (915MB/s), 873MiB/s-873MiB/s (915MB/s-915MB/s), io=19.7GiB (21.2GB), run=23167-23167msec
+  write: IOPS=6993, BW=874MiB/s (917MB/s)(19.8GiB/23173msec); 0 zone resets
+  cpu          : usr=1.50%, sys=45.35%, ctx=324459, majf=0, minf=36
+  WRITE: bw=874MiB/s (917MB/s), 874MiB/s-874MiB/s (917MB/s-917MB/s), io=19.8GiB (21.2GB), run=23173-23173msec
+  write: IOPS=6990, BW=874MiB/s (916MB/s)(19.8GiB/23204msec); 0 zone resets
+  cpu          : usr=1.71%, sys=45.15%, ctx=324783, majf=0, minf=36
+  WRITE: bw=874MiB/s (916MB/s), 874MiB/s-874MiB/s (916MB/s-916MB/s), io=19.8GiB (21.3GB), run=23204-23204msec
+  write: IOPS=6972, BW=872MiB/s (914MB/s)(19.7GiB/23168msec); 0 zone resets
+  cpu          : usr=1.59%, sys=45.66%, ctx=323437, majf=0, minf=36
+  WRITE: bw=872MiB/s (914MB/s), 872MiB/s-872MiB/s (914MB/s-914MB/s), io=19.7GiB (21.2GB), run=23168-23168msec
+######## rand_write_128k lf=1 ########
+  write: IOPS=6933, BW=867MiB/s (909MB/s)(19.6GiB/23154msec); 0 zone resets
+  cpu          : usr=1.63%, sys=45.59%, ctx=321412, majf=0, minf=36
+  WRITE: bw=867MiB/s (909MB/s), 867MiB/s-867MiB/s (909MB/s-909MB/s), io=19.6GiB (21.0GB), run=23154-23154msec
+  write: IOPS=7035, BW=879MiB/s (922MB/s)(19.9GiB/23162msec); 0 zone resets
+  cpu          : usr=1.68%, sys=45.35%, ctx=326290, majf=0, minf=36
+  WRITE: bw=879MiB/s (922MB/s), 879MiB/s-879MiB/s (922MB/s-922MB/s), io=19.9GiB (21.4GB), run=23162-23162msec
+  write: IOPS=6970, BW=871MiB/s (914MB/s)(19.7GiB/23169msec); 0 zone resets
+  cpu          : usr=1.64%, sys=45.05%, ctx=323305, majf=0, minf=36
+  WRITE: bw=871MiB/s (914MB/s), 871MiB/s-871MiB/s (914MB/s-914MB/s), io=19.7GiB (21.2GB), run=23169-23169msec
+  write: IOPS=7006, BW=876MiB/s (918MB/s)(19.8GiB/23159msec); 0 zone resets
+  cpu          : usr=1.57%, sys=45.46%, ctx=324925, majf=0, minf=36
+  WRITE: bw=876MiB/s (918MB/s), 876MiB/s-876MiB/s (918MB/s-918MB/s), io=19.8GiB (21.3GB), run=23159-23159msec
+  write: IOPS=6918, BW=865MiB/s (907MB/s)(19.6GiB/23154msec); 0 zone resets
+  cpu          : usr=1.56%, sys=45.74%, ctx=320715, majf=0, minf=36
+  WRITE: bw=865MiB/s (907MB/s), 865MiB/s-865MiB/s (907MB/s-907MB/s), io=19.6GiB (21.0GB), run=23154-23154msec

@@ -1,0 +1,11 @@
+run read_bench.sh
+for example: bash ~/read_bench.sh /mnt/xfs/src 2>&1 | tee ~/xfs_reads.txt
+
+then unmount fuse mount, then start fuse server with whatever write
+configuration you want to test:
+for example:
+numactl --cpunodebind=0 --membind=0 ~/libfuse/build/example/passthrough_hp
+--nopassthrough --nocache /mnt/fuse_src ~/mounts/tmp2 & sleep 2
+
+run write script:
+bash ~/write_bench.sh 2>&1 | tee ~/tmpfs_writethrough_pinned.txt
