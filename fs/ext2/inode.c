@@ -860,16 +860,12 @@ ext2_iomap_end(struct inode *inode, loff_t offset, loff_t length,
 	return 0;
 }
 
-static int ext2_iomap_next(const struct iomap_iter *iter, struct iomap *iomap,
+int ext2_iomap_next(const struct iomap_iter *iter, struct iomap *iomap,
 			   struct iomap *srcmap)
 {
 	return iomap_process(iter, iomap, srcmap, ext2_iomap_begin,
 			     ext2_iomap_end);
 }
-
-const struct iomap_ops ext2_iomap_ops = {
-	.iomap_next		= ext2_iomap_next,
-};
 
 int ext2_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
 		u64 start, u64 len)
@@ -888,7 +884,7 @@ int ext2_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
 	if (i_size == 0)
 		i_size = 1;
 	len = min_t(u64, len, i_size);
-	ret = iomap_fiemap(inode, fieinfo, start, len, &ext2_iomap_ops);
+	ret = iomap_fiemap(inode, fieinfo, start, len, ext2_iomap_next);
 	inode_unlock(inode);
 
 	return ret;

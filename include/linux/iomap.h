@@ -237,12 +237,6 @@ typedef int (*iomap_end_fn)(struct inode *inode, loff_t pos, loff_t length,
 typedef int (*iomap_next_fn)(const struct iomap_iter *iter, struct iomap *iomap,
 		struct iomap *srcmap);
 
-struct iomap_ops {
-	iomap_begin_fn iomap_begin;
-	iomap_end_fn iomap_end;
-	iomap_next_fn iomap_next;
-};
-
 /**
  * struct iomap_iter - Iterate through a range of a file
  * @inode: Set at the start of the iteration and should not change.
@@ -271,7 +265,7 @@ struct iomap_iter {
 	void *private;
 };
 
-int iomap_iter(struct iomap_iter *iter, const struct iomap_ops *ops);
+int iomap_iter(struct iomap_iter *iter, iomap_next_fn iomap_next);
 int iomap_iter_advance(struct iomap_iter *iter, u64 count);
 
 /**
@@ -365,14 +359,14 @@ static inline bool iomap_want_unshare_iter(const struct iomap_iter *iter)
 }
 
 ssize_t iomap_file_buffered_write(struct kiocb *iocb, struct iov_iter *from,
-		const struct iomap_ops *ops,
+		iomap_next_fn iomap_next,
 		const struct iomap_write_ops *write_ops, void *private);
 int iomap_fsverity_write(struct file *file, loff_t pos, size_t length,
-		const void *buf, const struct iomap_ops *ops,
+		const void *buf, iomap_next_fn iomap_next,
 		const struct iomap_write_ops *write_ops);
-void iomap_read_folio(const struct iomap_ops *ops,
+void iomap_read_folio(iomap_next_fn iomap_next,
 		struct iomap_read_folio_ctx *ctx, void *private);
-void iomap_readahead(const struct iomap_ops *ops,
+void iomap_readahead(iomap_next_fn iomap_next,
 		struct iomap_read_folio_ctx *ctx, void *private);
 bool iomap_is_partially_uptodate(struct folio *, size_t from, size_t count);
 struct folio *iomap_get_folio(struct iomap_iter *iter, loff_t pos, size_t len);
@@ -380,17 +374,17 @@ bool iomap_release_folio(struct folio *folio, gfp_t gfp_flags);
 void iomap_invalidate_folio(struct folio *folio, size_t offset, size_t len);
 bool iomap_dirty_folio(struct address_space *mapping, struct folio *folio);
 int iomap_file_unshare(struct inode *inode, loff_t pos, loff_t len,
-		const struct iomap_ops *ops,
+		iomap_next_fn iomap_next,
 		const struct iomap_write_ops *write_ops);
 unsigned int iomap_fill_dirty_folios(struct iomap_iter *iter, loff_t *start,
 		loff_t end, unsigned int *iomap_flags);
 int iomap_zero_range(struct inode *inode, loff_t pos, loff_t len,
-		bool *did_zero, const struct iomap_ops *ops,
+		bool *did_zero, iomap_next_fn iomap_next,
 		const struct iomap_write_ops *write_ops, void *private);
 int iomap_truncate_page(struct inode *inode, loff_t pos, bool *did_zero,
-		const struct iomap_ops *ops,
+		iomap_next_fn iomap_next,
 		const struct iomap_write_ops *write_ops, void *private);
-vm_fault_t iomap_page_mkwrite(struct vm_fault *vmf, const struct iomap_ops *ops,
+vm_fault_t iomap_page_mkwrite(struct vm_fault *vmf, iomap_next_fn iomap_next,
 		void *private);
 typedef void (*iomap_punch_t)(struct inode *inode, loff_t offset, loff_t length,
 		struct iomap *iomap);
@@ -399,13 +393,13 @@ void iomap_write_delalloc_release(struct inode *inode, loff_t start_byte,
 		iomap_punch_t punch);
 
 int iomap_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
-		u64 start, u64 len, const struct iomap_ops *ops);
+		u64 start, u64 len, iomap_next_fn iomap_next);
 loff_t iomap_seek_hole(struct inode *inode, loff_t offset,
-		const struct iomap_ops *ops);
+		iomap_next_fn iomap_next);
 loff_t iomap_seek_data(struct inode *inode, loff_t offset,
-		const struct iomap_ops *ops);
+		iomap_next_fn iomap_next);
 sector_t iomap_bmap(struct address_space *mapping, sector_t bno,
-		const struct iomap_ops *ops);
+		iomap_next_fn iomap_next);
 
 /*
  * Flags for iomap_ioend->io_flags.
@@ -612,10 +606,10 @@ struct iomap_dio_ops {
 #define IOMAP_DIO_BOUNCE		(1 << 4)
 
 ssize_t iomap_dio_rw(struct kiocb *iocb, struct iov_iter *iter,
-		const struct iomap_ops *ops, const struct iomap_dio_ops *dops,
+		iomap_next_fn iomap_next, const struct iomap_dio_ops *dops,
 		unsigned int dio_flags, void *private, size_t done_before);
 struct iomap_dio *__iomap_dio_rw(struct kiocb *iocb, struct iov_iter *iter,
-		const struct iomap_ops *ops, const struct iomap_dio_ops *dops,
+		iomap_next_fn iomap_next, const struct iomap_dio_ops *dops,
 		unsigned int dio_flags, void *private, size_t done_before);
 ssize_t iomap_dio_complete(struct iomap_dio *dio);
 void iomap_dio_bio_end_io(struct bio *bio);
@@ -626,7 +620,7 @@ struct swap_info_struct;
 
 int iomap_swapfile_activate(struct swap_info_struct *sis,
 		struct file *swap_file, sector_t *pagespan,
-		const struct iomap_ops *ops);
+		iomap_next_fn iomap_next);
 #else
 # define iomap_swapfile_activate(sis, swapfile, pagespan, ops)	(-EIO)
 #endif /* CONFIG_SWAP */
@@ -640,25 +634,25 @@ int iomap_bio_read_folio_range(const struct iomap_iter *iter,
 extern const struct iomap_read_ops iomap_bio_read_ops;
 
 static inline void iomap_bio_read_folio(struct folio *folio,
-		const struct iomap_ops *ops)
+		iomap_next_fn iomap_next)
 {
 	struct iomap_read_folio_ctx ctx = {
 		.ops		= &iomap_bio_read_ops,
 		.cur_folio	= folio,
 	};
 
-	iomap_read_folio(ops, &ctx, NULL);
+	iomap_read_folio(iomap_next, &ctx, NULL);
 }
 
 static inline void iomap_bio_readahead(struct readahead_control *rac,
-		const struct iomap_ops *ops)
+		iomap_next_fn iomap_next)
 {
 	struct iomap_read_folio_ctx ctx = {
 		.ops		= &iomap_bio_read_ops,
 		.rac		= rac,
 	};
 
-	iomap_readahead(ops, &ctx, NULL);
+	iomap_readahead(iomap_next, &ctx, NULL);
 }
 #endif /* CONFIG_BLOCK */
 

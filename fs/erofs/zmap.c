@@ -821,13 +821,9 @@ static int z_erofs_iomap_begin_report(struct inode *inode, loff_t offset,
 	return 0;
 }
 
-static int z_erofs_iomap_next_report(const struct iomap_iter *iter,
-				     struct iomap *iomap, struct iomap *srcmap)
+int z_erofs_iomap_next_report(const struct iomap_iter *iter,
+			      struct iomap *iomap, struct iomap *srcmap)
 {
 	return iomap_process(iter, iomap, srcmap, z_erofs_iomap_begin_report,
 			     NULL);
 }
-
-const struct iomap_ops z_erofs_iomap_report_ops = {
-	.iomap_next = z_erofs_iomap_next_report,
-};

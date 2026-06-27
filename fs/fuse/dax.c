@@ -660,10 +660,6 @@ static int fuse_iomap_next(const struct iomap_iter *iter, struct iomap *iomap,
 			     fuse_iomap_end);
 }
 
-static const struct iomap_ops fuse_iomap_ops = {
-	.iomap_next = fuse_iomap_next,
-};
-
 static void fuse_wait_dax_page(struct inode *inode)
 {
 	filemap_invalidate_unlock(inode->i_mapping);
@@ -691,7 +687,7 @@ ssize_t fuse_dax_read_iter(struct kiocb *iocb, struct iov_iter *to)
 		inode_lock_shared(inode);
 	}
 
-	ret = dax_iomap_rw(iocb, to, &fuse_iomap_ops);
+	ret = dax_iomap_rw(iocb, to, fuse_iomap_next);
 	inode_unlock_shared(inode);
 
 	/* TODO file_accessed(iocb->f_filp) */
@@ -746,7 +742,7 @@ ssize_t fuse_dax_write_iter(struct kiocb *iocb, struct iov_iter *from)
 	if (file_extending_write(iocb, from))
 		ret = fuse_dax_direct_write(iocb, from);
 	else
-		ret = dax_iomap_rw(iocb, from, &fuse_iomap_ops);
+		ret = dax_iomap_rw(iocb, from, fuse_iomap_next);
 
 out:
 	inode_unlock(inode);
@@ -781,7 +777,7 @@ retry:
 	 * to populate page cache or access memory we are trying to free.
 	 */
 	filemap_invalidate_lock_shared(inode->i_mapping);
-	ret = dax_iomap_fault(vmf, order, &pfn, &error, &fuse_iomap_ops);
+	ret = dax_iomap_fault(vmf, order, &pfn, &error, fuse_iomap_next);
 	if ((ret & VM_FAULT_ERROR) && error == -EAGAIN) {
 		error = 0;
 		retry = true;

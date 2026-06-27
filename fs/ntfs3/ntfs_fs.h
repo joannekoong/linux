@@ -785,7 +785,8 @@ int ntfs_create_inode(struct mnt_idmap *idmap, struct inode *dir,
 int ntfs_link_inode(struct inode *inode, struct dentry *dentry);
 int ntfs_unlink_inode(struct inode *dir, const struct dentry *dentry);
 void ntfs_evict_inode(struct inode *inode);
-extern const struct iomap_ops ntfs_iomap_ops;
+int ntfs_iomap_next(const struct iomap_iter *iter, struct iomap *iomap,
+		    struct iomap *srcmap);
 extern const struct iomap_write_ops ntfs_iomap_folio_ops;
 extern const struct inode_operations ntfs_link_inode_operations;
 extern const struct address_space_operations ntfs_aops;

@@ -97,7 +97,7 @@ static int ntfs_read_folio(struct file *file, struct folio *folio)
 			return ntfs_read_compressed_block(folio);
 	}
 
-	iomap_read_folio(&ntfs_read_iomap_ops, &ctx, NULL);
+	iomap_read_folio(ntfs_read_iomap_next, &ctx, NULL);
 	return 0;
 }
 
@@ -238,7 +238,7 @@ static void ntfs_readahead(struct readahead_control *rac)
 	 */
 	if (!NInoNonResident(ni) || NInoCompressed(ni))
 		return;
-	iomap_readahead(&ntfs_read_iomap_ops, &ctx, NULL);
+	iomap_readahead(ntfs_read_iomap_next, &ctx, NULL);
 }
 
 static int ntfs_writepages(struct address_space *mapping,
@@ -274,7 +274,7 @@ static int ntfs_swap_activate(struct swap_info_struct *sis,
 		struct file *swap_file, sector_t *span)
 {
 	return iomap_swapfile_activate(sis, swap_file, span,
-			&ntfs_read_iomap_ops);
+			ntfs_read_iomap_next);
 }
 
 const struct address_space_operations ntfs_aops = {
