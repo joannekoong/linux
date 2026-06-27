@@ -668,7 +668,7 @@ static int exfat_extend_valid_size(struct inode *inode, loff_t new_valid_size)
 
 		ret = iomap_zero_range(inode, old_valid_size,
 				new_valid_size - old_valid_size, NULL,
-				&exfat_write_iomap_ops, NULL, NULL);
+				exfat_write_iomap_next, NULL, NULL);
 		if (ret) {
 			truncate_setsize(inode, old_valid_size);
 			exfat_truncate(inode);
@@ -687,7 +687,7 @@ static ssize_t exfat_fallback_buffered_write(struct kiocb *iocb,
 
 	iocb->ki_flags &= ~IOCB_DIRECT;
 
-	written = iomap_file_buffered_write(iocb, from, &exfat_write_iomap_ops,
+	written = iomap_file_buffered_write(iocb, from, exfat_write_iomap_next,
 			NULL, NULL);
 	if (written < 0)
 		return written;
@@ -709,7 +709,7 @@ static ssize_t exfat_dio_write_iter(struct kiocb *iocb, struct iov_iter *from)
 {
 	ssize_t ret;
 
-	ret = iomap_dio_rw(iocb, from, &exfat_write_iomap_ops,
+	ret = iomap_dio_rw(iocb, from, exfat_write_iomap_next,
 			&exfat_write_dio_ops, 0, NULL, 0);
 	if (ret == -ENOTBLK)
 		ret = 0;
@@ -773,7 +773,7 @@ static ssize_t exfat_file_write_iter(struct kiocb *iocb, struct iov_iter *iter)
 		ret = exfat_dio_write_iter(iocb, iter);
 	else
 		ret = iomap_file_buffered_write(iocb, iter,
-				&exfat_write_iomap_ops, NULL, NULL);
+				exfat_write_iomap_next, NULL, NULL);
 	if (ret < 0)
 		goto unlock;
 
@@ -809,7 +809,7 @@ static ssize_t exfat_file_read_iter(struct kiocb *iocb, struct iov_iter *iter)
 
 	if (iocb->ki_flags & IOCB_DIRECT) {
 		file_accessed(iocb->ki_filp);
-		ret = iomap_dio_rw(iocb, iter, &exfat_iomap_ops, NULL, 0,
+		ret = iomap_dio_rw(iocb, iter, exfat_iomap_next, NULL, 0,
 				NULL, 0);
 	} else {
 		ret = generic_file_read_iter(iocb, iter);
@@ -850,7 +850,7 @@ static vm_fault_t exfat_page_mkwrite(struct vm_fault *vmf)
 			 */
 			err = iomap_zero_range(inode, ei->zeroed_size,
 					mmap_valid_size - ei->zeroed_size, NULL,
-					&exfat_iomap_ops, NULL, NULL);
+					exfat_iomap_next, NULL, NULL);
 			if (err < 0) {
 				inode_unlock(inode);
 				return vmf_fs_error(err);
@@ -866,7 +866,7 @@ static vm_fault_t exfat_page_mkwrite(struct vm_fault *vmf)
 	file_update_time(vmf->vma->vm_file);
 
 	filemap_invalidate_lock_shared(inode->i_mapping);
-	ret = iomap_page_mkwrite(vmf, &exfat_write_iomap_ops, NULL);
+	ret = iomap_page_mkwrite(vmf, exfat_write_iomap_next, NULL);
 	filemap_invalidate_unlock_shared(inode->i_mapping);
 	sb_end_pagefault(inode->i_sb);
 	inode_unlock(inode);
@@ -939,12 +939,12 @@ static loff_t exfat_file_llseek(struct file *file, loff_t offset, int whence)
 	switch (whence) {
 	case SEEK_HOLE:
 		inode_lock_shared(inode);
-		offset = iomap_seek_hole(inode, offset, &exfat_iomap_ops);
+		offset = iomap_seek_hole(inode, offset, exfat_iomap_next);
 		inode_unlock_shared(inode);
 		break;
 	case SEEK_DATA:
 		inode_lock_shared(inode);
-		offset = iomap_seek_data(inode, offset, &exfat_iomap_ops);
+		offset = iomap_seek_data(inode, offset, exfat_iomap_next);
 		inode_unlock_shared(inode);
 		break;
 	default:
