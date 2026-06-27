@@ -53,14 +53,22 @@ int xfs_read_iomap_begin(struct inode *inode, loff_t offset,
 		loff_t length, unsigned flags, struct iomap *iomap,
 		struct iomap *srcmap);
 
-extern const struct iomap_ops xfs_buffered_write_iomap_ops;
-extern const struct iomap_ops xfs_direct_write_iomap_ops;
-extern const struct iomap_ops xfs_zoned_direct_write_iomap_ops;
-extern const struct iomap_ops xfs_read_iomap_ops;
-extern const struct iomap_ops xfs_seek_iomap_ops;
-extern const struct iomap_ops xfs_xattr_iomap_ops;
-extern const struct iomap_ops xfs_dax_write_iomap_ops;
-extern const struct iomap_ops xfs_atomic_write_cow_iomap_ops;
+int xfs_buffered_write_iomap_next(const struct iomap_iter *iter,
+		struct iomap *iomap, struct iomap *srcmap);
+int xfs_direct_write_iomap_next(const struct iomap_iter *iter,
+		struct iomap *iomap, struct iomap *srcmap);
+int xfs_zoned_direct_write_iomap_next(const struct iomap_iter *iter,
+		struct iomap *iomap, struct iomap *srcmap);
+int xfs_read_iomap_next(const struct iomap_iter *iter, struct iomap *iomap,
+		struct iomap *srcmap);
+int xfs_seek_iomap_next(const struct iomap_iter *iter, struct iomap *iomap,
+		struct iomap *srcmap);
+int xfs_xattr_iomap_next(const struct iomap_iter *iter, struct iomap *iomap,
+		struct iomap *srcmap);
+int xfs_dax_write_iomap_next(const struct iomap_iter *iter, struct iomap *iomap,
+		struct iomap *srcmap);
+int xfs_atomic_write_cow_iomap_next(const struct iomap_iter *iter,
+		struct iomap *iomap, struct iomap *srcmap);
 extern const struct iomap_write_ops xfs_iomap_write_ops;
 
 #endif /* __XFS_IOMAP_H__*/

@@ -397,7 +397,8 @@ extern const struct file_operations erofs_file_fops;
 extern const struct file_operations erofs_dir_fops;
 extern const struct file_operations erofs_ishare_fops;
 
-extern const struct iomap_ops z_erofs_iomap_report_ops;
+int z_erofs_iomap_next_report(const struct iomap_iter *iter,
+		struct iomap *iomap, struct iomap *srcmap);
 
 void *erofs_read_metadata(struct super_block *sb, struct erofs_buf *buf,
 			  erofs_off_t *offset, int *lengthp);
