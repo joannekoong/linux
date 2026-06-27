@@ -5177,10 +5177,6 @@ static int ext4_iomap_xattr_next(const struct iomap_iter *iter,
 	return iomap_process(iter, iomap, srcmap, ext4_iomap_xattr_begin, NULL);
 }
 
-static const struct iomap_ops ext4_iomap_xattr_ops = {
-	.iomap_next		= ext4_iomap_xattr_next,
-};
-
 static int ext4_fiemap_check_ranges(struct inode *inode, u64 start, u64 *len)
 {
 	u64 maxbytes = ext4_get_maxbytes(inode);
@@ -5223,10 +5219,10 @@ int ext4_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
 	if (fieinfo->fi_flags & FIEMAP_FLAG_XATTR) {
 		fieinfo->fi_flags &= ~FIEMAP_FLAG_XATTR;
 		error = iomap_fiemap(inode, fieinfo, start, len,
-				     &ext4_iomap_xattr_ops);
+				     ext4_iomap_xattr_next);
 	} else {
 		error = iomap_fiemap(inode, fieinfo, start, len,
-				     &ext4_iomap_report_ops);
+				     ext4_iomap_next_report);
 	}
 unlock:
 	inode_unlock_shared(inode);

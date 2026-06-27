@@ -676,7 +676,7 @@ static int iomap_dio_iter(struct iomap_iter *iter, struct iomap_dio *dio)
  */
 struct iomap_dio *
 __iomap_dio_rw(struct kiocb *iocb, struct iov_iter *iter,
-		const struct iomap_ops *ops, const struct iomap_dio_ops *dops,
+		iomap_next_fn iomap_next, const struct iomap_dio_ops *dops,
 		unsigned int dio_flags, void *private, size_t done_before)
 {
 	struct inode *inode = file_inode(iocb->ki_filp);
@@ -800,7 +800,7 @@ __iomap_dio_rw(struct kiocb *iocb, struct iov_iter *iter,
 	inode_dio_begin(inode);
 
 	blk_start_plug(&plug);
-	while ((ret = iomap_iter(&iomi, ops)) > 0) {
+	while ((ret = iomap_iter(&iomi, iomap_next)) > 0) {
 		iomi.status = iomap_dio_iter(&iomi, dio);
 
 		/*
@@ -890,12 +890,12 @@ EXPORT_SYMBOL_GPL(__iomap_dio_rw);
 
 ssize_t
 iomap_dio_rw(struct kiocb *iocb, struct iov_iter *iter,
-		const struct iomap_ops *ops, const struct iomap_dio_ops *dops,
+		iomap_next_fn iomap_next, const struct iomap_dio_ops *dops,
 		unsigned int dio_flags, void *private, size_t done_before)
 {
 	struct iomap_dio *dio;
 
-	dio = __iomap_dio_rw(iocb, iter, ops, dops, dio_flags, private,
+	dio = __iomap_dio_rw(iocb, iter, iomap_next, dops, dio_flags, private,
 			     done_before);
 	if (IS_ERR_OR_NULL(dio))
 		return PTR_ERR_OR_ZERO(dio);

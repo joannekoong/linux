@@ -42,7 +42,7 @@ static inline void iomap_iter_done(struct iomap_iter *iter)
 /**
  * iomap_iter - iterate over a ranges in a file
  * @iter: iteration structue
- * @ops: iomap ops provided by the file system
+ * @iomap_next: iomap_next callback provided by the file system
  *
  * Iterate over filesystem-provided space mappings for the provided file range.
  *
@@ -54,13 +54,13 @@ static inline void iomap_iter_done(struct iomap_iter *iter)
  * of the loop body:  leave @iter.status unchanged, or set it to a negative
  * errno.
  */
-int iomap_iter(struct iomap_iter *iter, const struct iomap_ops *ops)
+int iomap_iter(struct iomap_iter *iter, iomap_next_fn iomap_next)
 {
 	int ret;
 
-	trace_iomap_iter(iter, ops, _RET_IP_);
+	trace_iomap_iter(iter, iomap_next, _RET_IP_);
 
-	ret = ops->iomap_next(iter, &iter->iomap, &iter->srcmap);
+	ret = iomap_next(iter, &iter->iomap, &iter->srcmap);
 	iter->status = 0;
 	if (ret > 0)
 		iomap_iter_done(iter);

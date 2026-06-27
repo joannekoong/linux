@@ -151,15 +151,11 @@ static int exfat_write_iomap_begin(struct inode *inode, loff_t offset, loff_t le
 	return __exfat_iomap_begin(inode, offset, length, flags, iomap, true);
 }
 
-static int exfat_iomap_next(const struct iomap_iter *iter, struct iomap *iomap,
+int exfat_iomap_next(const struct iomap_iter *iter, struct iomap *iomap,
 		struct iomap *srcmap)
 {
 	return iomap_process(iter, iomap, srcmap, exfat_iomap_begin, NULL);
 }
-
-const struct iomap_ops exfat_iomap_ops = {
-	.iomap_next = exfat_iomap_next,
-};
 
 /*
  * exfat_write_iomap_end - Update the state after write
@@ -192,16 +188,12 @@ static int exfat_write_iomap_end(struct inode *inode, loff_t pos, loff_t length,
 	return written;
 }
 
-static int exfat_write_iomap_next(const struct iomap_iter *iter,
-		struct iomap *iomap, struct iomap *srcmap)
+int exfat_write_iomap_next(const struct iomap_iter *iter, struct iomap *iomap,
+		struct iomap *srcmap)
 {
 	return iomap_process(iter, iomap, srcmap,
 			exfat_write_iomap_begin, exfat_write_iomap_end);
 }
-
-const struct iomap_ops exfat_write_iomap_ops = {
-	.iomap_next	= exfat_write_iomap_next,
-};
 
 /*
  * exfat_writeback_range - Map folio during writeback
@@ -279,5 +271,5 @@ const struct iomap_read_ops exfat_iomap_bio_read_ops = {
 int exfat_iomap_swap_activate(struct swap_info_struct *sis,
 			       struct file *file, sector_t *span)
 {
-	return iomap_swapfile_activate(sis, file, span, &exfat_iomap_ops);
+	return iomap_swapfile_activate(sis, file, span, exfat_iomap_next);
 }

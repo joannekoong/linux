@@ -4171,6 +4171,7 @@ static bool f2fs_dirty_data_folio(struct address_space *mapping,
 }
 
 
+
 static sector_t f2fs_bmap_compress(struct inode *inode, sector_t block)
 {
 #ifdef CONFIG_F2FS_FS_COMPRESSION
@@ -4653,12 +4654,8 @@ static int f2fs_iomap_begin(struct inode *inode, loff_t offset, loff_t length,
 	return 0;
 }
 
-static int f2fs_iomap_next(const struct iomap_iter *iter, struct iomap *iomap,
-			   struct iomap *srcmap)
+int f2fs_iomap_next(const struct iomap_iter *iter, struct iomap *iomap,
+		    struct iomap *srcmap)
 {
 	return iomap_process(iter, iomap, srcmap, f2fs_iomap_begin, NULL);
 }
-
-const struct iomap_ops f2fs_iomap_ops = {
-	.iomap_next	= f2fs_iomap_next,
-};

@@ -4004,8 +4004,10 @@ static inline void ext4_clear_io_unwritten_flag(ext4_io_end_t *io_end)
 		io_end->flag &= ~EXT4_IO_END_UNWRITTEN;
 }
 
-extern const struct iomap_ops ext4_iomap_ops;
-extern const struct iomap_ops ext4_iomap_report_ops;
+int ext4_iomap_next(const struct iomap_iter *iter, struct iomap *iomap,
+		struct iomap *srcmap);
+int ext4_iomap_next_report(const struct iomap_iter *iter, struct iomap *iomap,
+		struct iomap *srcmap);
 
 static inline int ext4_buffer_uptodate(struct buffer_head *bh)
 {
