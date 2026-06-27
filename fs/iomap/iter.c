@@ -39,81 +39,6 @@ static inline void iomap_iter_done(struct iomap_iter *iter)
 		trace_iomap_iter_srcmap(iter->inode, &iter->srcmap);
 }
 
-static int iomap_iter_legacy(struct iomap_iter *iter, const struct iomap_ops *ops)
-{
-	bool stale = iter->iomap.flags & IOMAP_F_STALE;
-	ssize_t advanced;
-	u64 olen;
-	int ret;
-
-	trace_iomap_iter(iter, ops, _RET_IP_);
-
-	if (!iter->iomap.length)
-		goto begin;
-
-	/*
-	 * Calculate how far the iter was advanced and the original length bytes
-	 * for ->iomap_end().
-	 */
-	advanced = iter->pos - iter->iter_start_pos;
-	olen = iter->len + advanced;
-
-	if (ops->iomap_end) {
-		ret = ops->iomap_end(iter->inode, iter->iter_start_pos,
-				iomap_length_trim(iter, iter->iter_start_pos,
-						  olen),
-				advanced, iter->flags, &iter->iomap);
-		if (ret < 0 && !advanced)
-			return ret;
-	}
-
-	/* detect old return semantics where this would advance */
-	if (WARN_ON_ONCE(iter->status > 0))
-		iter->status = -EIO;
-
-	/*
-	 * Use iter->len to determine whether to continue onto the next mapping.
-	 * Explicitly terminate on error status or if the current iter has not
-	 * advanced at all (i.e. no work was done for some reason) unless the
-	 * mapping has been marked stale and needs to be reprocessed.
-	 */
-	if (iter->status < 0)
-		ret = iter->status;
-	else if (iter->len == 0 || (!advanced && !stale))
-		ret = 0;
-	else
-		ret = 1;
-	iomap_iter_clean_fbatch(iter);
-	iter->status = 0;
-	if (ret <= 0)
-		return ret;
-
-	memset(&iter->iomap, 0, sizeof(iter->iomap));
-	memset(&iter->srcmap, 0, sizeof(iter->srcmap));
-
-begin:
-	ret = ops->iomap_begin(iter->inode, iter->pos, iter->len, iter->flags,
-			       &iter->iomap, &iter->srcmap);
-	if (ret < 0)
-		return ret;
-	iomap_iter_done(iter);
-	return 1;
-}
-
-static int iomap_iter_next(struct iomap_iter *iter, const struct iomap_ops *ops)
-{
-	int ret;
-
-	trace_iomap_iter(iter, ops, _RET_IP_);
-
-	ret = ops->iomap_next(iter, &iter->iomap, &iter->srcmap);
-	iter->status = 0;
-	if (ret > 0)
-		iomap_iter_done(iter);
-
-	return ret;
-}
-
 /**
  * iomap_iter - iterate over a ranges in a file
  * @iter: iteration structue
@@ -131,10 +56,16 @@ static int iomap_iter_next(struct iomap_iter *iter, const struct iomap_ops *ops)
  */
 int iomap_iter(struct iomap_iter *iter, const struct iomap_ops *ops)
 {
-	if (ops->iomap_next)
-		return iomap_iter_next(iter, ops);
+	int ret;
 
-	return iomap_iter_legacy(iter, ops);
+	trace_iomap_iter(iter, ops, _RET_IP_);
+
+	ret = ops->iomap_next(iter, &iter->iomap, &iter->srcmap);
+	iter->status = 0;
+	if (ret > 0)
+		iomap_iter_done(iter);
+
+	return ret;
 }
 
 /**
