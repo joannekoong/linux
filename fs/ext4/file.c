@@ -91,7 +91,7 @@ static ssize_t ext4_dio_read_iter(struct kiocb *iocb, struct iov_iter *to)
 		return generic_file_read_iter(iocb, to);
 	}
 
-	ret = iomap_dio_rw(iocb, to, &ext4_iomap_ops, NULL,
+	ret = iomap_dio_rw(iocb, to, ext4_iomap_next, NULL,
 			   IOMAP_DIO_NO_IOMAP_END, NULL, 0);
 	inode_unlock_shared(inode);
 
@@ -120,7 +120,7 @@ static ssize_t ext4_dax_read_iter(struct kiocb *iocb, struct iov_iter *to)
 		/* Fallback to buffered IO in case we cannot support DAX */
 		return generic_file_read_iter(iocb, to);
 	}
-	ret = dax_iomap_rw(iocb, to, &ext4_iomap_ops);
+	ret = dax_iomap_rw(iocb, to, ext4_iomap_next);
 	inode_unlock_shared(inode);
 
 	file_accessed(iocb->ki_filp);
@@ -590,7 +590,7 @@ static ssize_t ext4_dio_write_iter(struct kiocb *iocb, struct iov_iter *from)
 			goto out;
 	}
 
-	ret = iomap_dio_rw(iocb, from, &ext4_iomap_ops, &ext4_dio_write_ops,
+	ret = iomap_dio_rw(iocb, from, ext4_iomap_next, &ext4_dio_write_ops,
 			   dio_flags, NULL, 0);
 	if (ret == -ENOTBLK)
 		ret = 0;
@@ -689,7 +689,7 @@ ext4_dax_write_iter(struct kiocb *iocb, struct iov_iter *from)
 		ext4_journal_stop(handle);
 	}
 
-	ret = dax_iomap_rw(iocb, from, &ext4_iomap_ops);
+	ret = dax_iomap_rw(iocb, from, ext4_iomap_next);
 
 	if (extend) {
 		ret = ext4_handle_inode_extension(inode, offset, ret, count);
@@ -777,7 +777,7 @@ retry:
 	} else {
 		filemap_invalidate_lock_shared(mapping);
 	}
-	result = dax_iomap_fault(vmf, order, &pfn, &error, &ext4_iomap_ops);
+	result = dax_iomap_fault(vmf, order, &pfn, &error, ext4_iomap_next);
 	if (write) {
 		ext4_journal_stop(handle);
 
@@ -956,13 +956,13 @@ loff_t ext4_llseek(struct file *file, loff_t offset, int whence)
 	case SEEK_HOLE:
 		inode_lock_shared(inode);
 		offset = iomap_seek_hole(inode, offset,
-					 &ext4_iomap_report_ops);
+					 ext4_iomap_next_report);
 		inode_unlock_shared(inode);
 		break;
 	case SEEK_DATA:
 		inode_lock_shared(inode);
 		offset = iomap_seek_data(inode, offset,
-					 &ext4_iomap_report_ops);
+					 ext4_iomap_next_report);
 		inode_unlock_shared(inode);
 		break;
 	}

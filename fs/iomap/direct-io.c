@@ -682,7 +682,7 @@ static int iomap_dio_iter(struct iomap_iter *iter, struct iomap_dio *dio)
  */
 struct iomap_dio *
 __iomap_dio_rw(struct kiocb *iocb, struct iov_iter *iter,
-		const struct iomap_ops *ops, const struct iomap_dio_ops *dops,
+		iomap_iter_next_fn next, const struct iomap_dio_ops *dops,
 		unsigned int dio_flags, void *private, size_t done_before)
 {
 	struct inode *inode = file_inode(iocb->ki_filp);
@@ -806,7 +806,7 @@ __iomap_dio_rw(struct kiocb *iocb, struct iov_iter *iter,
 	inode_dio_begin(inode);
 
 	blk_start_plug(&plug);
-	while ((ret = iomap_iter(&iomi, ops)) > 0) {
+	while ((ret = iomap_iter(&iomi, next)) > 0) {
 		iomi.status = iomap_dio_iter(&iomi, dio);
 
 		/*
@@ -1047,8 +1047,7 @@ iomap_dio_simple_finish(struct iomap_iter *iomi, iomap_iter_next_fn next,
  */
 static ssize_t
 iomap_dio_simple(struct kiocb *iocb, struct iov_iter *iter,
-		 const struct iomap_ops *ops, void *private,
-		 unsigned int dio_flags)
+		 iomap_iter_next_fn next, void *private, unsigned int dio_flags)
 {
 	struct inode *inode = file_inode(iocb->ki_filp);
 	size_t count = iov_iter_count(iter);
@@ -1074,7 +1073,7 @@ iomap_dio_simple(struct kiocb *iocb, struct iov_iter *iter,
 
 	inode_dio_begin(inode);
 
-	ret = ops->iomap_next(&iomi, &iomi.iomap, &iomi.srcmap);
+	ret = next(&iomi, &iomi.iomap, &iomi.srcmap);
 	if (ret <= 0) {
 		inode_dio_end(inode);
 		/* the first iteration must yield a mapping (>0) or an error */
@@ -1146,7 +1145,7 @@ iomap_dio_simple(struct kiocb *iocb, struct iov_iter *iter,
 	 * iomap_next() call on the hot read path.
 	 */
 	if (!(dio_flags & IOMAP_DIO_NO_IOMAP_END))
-		iomap_dio_simple_finish(&iomi, ops->iomap_next, count);
+		iomap_dio_simple_finish(&iomi, next, count);
 
 	if (!wait_for_completion) {
 		bio->bi_end_io = iomap_dio_simple_end_io;
@@ -1164,27 +1163,27 @@ out_bio_put:
 	bio_put(bio);
 out_iomap_end:
 	if (!(dio_flags & IOMAP_DIO_NO_IOMAP_END))
-		iomap_dio_simple_finish(&iomi, ops->iomap_next, 0);
+		iomap_dio_simple_finish(&iomi, next, 0);
 	inode_dio_end(inode);
 	return ret;
 }
 
 ssize_t
-iomap_dio_rw(struct kiocb *iocb, struct iov_iter *iter,
-		const struct iomap_ops *ops, const struct iomap_dio_ops *dops,
-		unsigned int dio_flags, void *private, size_t done_before)
+iomap_dio_rw(struct kiocb *iocb, struct iov_iter *iter, iomap_iter_next_fn next,
+		const struct iomap_dio_ops *dops, unsigned int dio_flags,
+		void *private, size_t done_before)
 {
 	struct iomap_dio *dio;
 	ssize_t ret;
 
 	if (iomap_dio_simple_supported(iocb, iter, dops, dio_flags,
 				       done_before)) {
-		ret = iomap_dio_simple(iocb, iter, ops, private, dio_flags);
+		ret = iomap_dio_simple(iocb, iter, next, private, dio_flags);
 		if (ret != -ENOTBLK)
 			return ret;
 	}
 
-	dio = __iomap_dio_rw(iocb, iter, ops, dops, dio_flags, private,
+	dio = __iomap_dio_rw(iocb, iter, next, dops, dio_flags, private,
 			     done_before);
 	if (IS_ERR_OR_NULL(dio))
 		return PTR_ERR_OR_ZERO(dio);

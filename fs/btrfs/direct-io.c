@@ -801,10 +801,6 @@ static void btrfs_dio_submit_io(const struct iomap_iter *iter, struct bio *bio,
 static DEFINE_IOMAP_ITER_NEXT_END(btrfs_dio_iomap_next, btrfs_dio_iomap_begin,
 				  btrfs_dio_iomap_end);
 
-static const struct iomap_ops btrfs_dio_iomap_ops = {
-	.iomap_next             = btrfs_dio_iomap_next,
-};
-
 static const struct iomap_dio_ops btrfs_dio_ops = {
 	.submit_io		= btrfs_dio_submit_io,
 	.bio_set		= &btrfs_dio_bioset,
@@ -815,7 +811,7 @@ static ssize_t btrfs_dio_read(struct kiocb *iocb, struct iov_iter *iter,
 {
 	struct btrfs_dio_data data = { 0 };
 
-	return iomap_dio_rw(iocb, iter, &btrfs_dio_iomap_ops, &btrfs_dio_ops,
+	return iomap_dio_rw(iocb, iter, btrfs_dio_iomap_next, &btrfs_dio_ops,
 			    IOMAP_DIO_PARTIAL | IOMAP_DIO_FSBLOCK_ALIGNED, &data, done_before);
 }
 
@@ -824,7 +820,7 @@ static struct iomap_dio *btrfs_dio_write(struct kiocb *iocb, struct iov_iter *it
 {
 	struct btrfs_dio_data data = { 0 };
 
-	return __iomap_dio_rw(iocb, iter, &btrfs_dio_iomap_ops, &btrfs_dio_ops,
+	return __iomap_dio_rw(iocb, iter, btrfs_dio_iomap_next, &btrfs_dio_ops,
 			    IOMAP_DIO_PARTIAL | IOMAP_DIO_FSBLOCK_ALIGNED, &data, done_before);
 }
 
