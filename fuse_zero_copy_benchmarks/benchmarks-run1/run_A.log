@@ -1,0 +1,165 @@
+nohup: ignoring input
+memlock limit (KB): unlimited
+MemAvailable=234GiB  tmpfs=16G  (need >=18GiB)
+date(local box clock): Mon Jun 29 02:21:31 PM PDT 2026
+
+Linux kerneltest002.04.lla3.facebook.com 7.1.0-rc1-00091-gee9ed0f56179-dirty #26 SMP PREEMPT Mon Jun 29 10:14:04 PDT 2026 x86_64 x86_64 x86_64 GNU/Linux
+
+Model name:                              Intel(R) Xeon(R) Gold 6138 CPU @ 2.00GHz
+BIOS Model name:                         Intel(R) Xeon(R) Gold 6138 CPU @ 2.00GHz
+Thread(s) per core:                      2
+Core(s) per socket:                      20
+Socket(s):                               2
+
+fio-3.41
+
+SERVER=/root/libfuse/build/example/passthrough_hp
+BASE_OPTS=-o io_uring_q_depth=8
+ZC_OPTS=-o io_uring_zero_copy -o io_uring_q_depth=8
+SZ=8G BS=1M NUMJOBS=2 RUNTIME=30 RAMP=10 ITERS=3
+
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/nvme0n1p4  232G   87G  134G  40% /
+tmpfs            16G  8.0G  8.0G  50% /root/src_tmpfs
+NOTE: each fio run takes ~40s of silence after its line; total ~1h.
+>>> start server: cfg=baseline src=/root/src_nvme opts=-o io_uring_q_depth=8
+    pre-warming backing cache for baseline
+    fio baseline_dread_rand run1
+    fio baseline_dread_rand run2
+    fio baseline_dread_rand run3
+    fio baseline_dread_seq run1
+    fio baseline_dread_seq run2
+    fio baseline_dread_seq run3
+    fio baseline_bread_rand run1
+    fio baseline_bread_rand run2
+    fio baseline_bread_rand run3
+    fio baseline_bread_seq run1
+    fio baseline_bread_seq run2
+    fio baseline_bread_seq run3
+>>> start server: cfg=baseline src=/root/src_tmpfs opts=-o io_uring_q_depth=8
+    fio baseline_dwrite_rand run1
+    fio baseline_dwrite_rand run2
+    fio baseline_dwrite_rand run3
+    fio baseline_dwrite_seq run1
+    fio baseline_dwrite_seq run2
+    fio baseline_dwrite_seq run3
+    fio baseline_bwrite_rand run1
+    fio baseline_bwrite_rand run2
+    fio baseline_bwrite_rand run3
+    fio baseline_bwrite_seq run1
+    fio baseline_bwrite_seq run2
+    fio baseline_bwrite_seq run3
+>>> start server: cfg=regbuf src=/root/src_nvme opts=-o io_uring_registered_buffers -o io_uring_q_depth=8
+    pre-warming backing cache for regbuf
+    fio regbuf_dread_rand run1
+    fio regbuf_dread_rand run2
+    fio regbuf_dread_rand run3
+    fio regbuf_dread_seq run1
+    fio regbuf_dread_seq run2
+    fio regbuf_dread_seq run3
+    fio regbuf_bread_rand run1
+    fio regbuf_bread_rand run2
+    fio regbuf_bread_rand run3
+    fio regbuf_bread_seq run1
+    fio regbuf_bread_seq run2
+    fio regbuf_bread_seq run3
+>>> start server: cfg=regbuf src=/root/src_tmpfs opts=-o io_uring_registered_buffers -o io_uring_q_depth=8
+    fio regbuf_dwrite_rand run1
+    fio regbuf_dwrite_rand run2
+    fio regbuf_dwrite_rand run3
+    fio regbuf_dwrite_seq run1
+    fio regbuf_dwrite_seq run2
+    fio regbuf_dwrite_seq run3
+    fio regbuf_bwrite_rand run1
+    fio regbuf_bwrite_rand run2
+    fio regbuf_bwrite_rand run3
+    fio regbuf_bwrite_seq run1
+    fio regbuf_bwrite_seq run2
+    fio regbuf_bwrite_seq run3
+>>> start server: cfg=zc src=/root/src_nvme opts=-o io_uring_zero_copy -o io_uring_q_depth=8
+    pre-warming backing cache for zc
+    fio zc_dread_rand run1
+    fio zc_dread_rand run2
+    fio zc_dread_rand run3
+    fio zc_dread_seq run1
+    fio zc_dread_seq run2
+    fio zc_dread_seq run3
+    fio zc_bread_rand run1
+    fio zc_bread_rand run2
+    fio zc_bread_rand run3
+    fio zc_bread_seq run1
+    fio zc_bread_seq run2
+    fio zc_bread_seq run3
+>>> start server: cfg=zc src=/root/src_tmpfs opts=-o io_uring_zero_copy -o io_uring_q_depth=8
+    fio zc_dwrite_rand run1
+    fio zc_dwrite_rand run2
+    fio zc_dwrite_rand run3
+    fio zc_dwrite_seq run1
+    fio zc_dwrite_seq run2
+    fio zc_dwrite_seq run3
+    fio zc_bwrite_rand run1
+    fio zc_bwrite_rand run2
+    fio zc_bwrite_rand run3
+    fio zc_bwrite_seq run1
+    fio zc_bwrite_seq run2
+    fio zc_bwrite_seq run3
+
+=== mean bandwidth (KiB/s) over 3 runs ===
+baseline_bread_rand      2880977
+baseline_bread_seq       2754764
+baseline_bwrite_rand     1465234
+baseline_bwrite_seq      1512612
+baseline_dread_rand      1889299
+baseline_dread_seq       1929345
+baseline_dwrite_rand     3227699
+baseline_dwrite_seq      3410261
+regbuf_bread_rand        3055224
+regbuf_bread_seq         2887807
+regbuf_bwrite_rand       1734466
+regbuf_bwrite_seq        2076095
+regbuf_dread_rand        1918616
+regbuf_dread_seq         1914476
+regbuf_dwrite_rand       4555510
+regbuf_dwrite_seq        5276097
+zc_bread_rand            3264014
+zc_bread_seq             3397986
+zc_bwrite_rand           1767873
+zc_bwrite_seq            2061096
+zc_dread_rand            2095578
+zc_dread_seq             2057989
+zc_dwrite_rand           5103252
+zc_dwrite_seq            4959078
+
+=== registered-buffers vs baseline (per workload) ===
+dread_rand     baseline=1845  regbuf=1874 MiB/s  (+1.6%)
+dread_seq      baseline=1884  regbuf=1870 MiB/s  (-0.8%)
+bread_rand     baseline=2813  regbuf=2984 MiB/s  (+6.0%)
+bread_seq      baseline=2690  regbuf=2820 MiB/s  (+4.8%)
+dwrite_rand    baseline=3152  regbuf=4449 MiB/s  (+41.1%)
+dwrite_seq     baseline=3330  regbuf=5152 MiB/s  (+54.7%)
+bwrite_rand    baseline=1431  regbuf=1694 MiB/s  (+18.4%)
+bwrite_seq     baseline=1477  regbuf=2027 MiB/s  (+37.3%)
+
+=== zero-copy vs baseline (per workload) ===
+dread_rand     baseline=1845  zc=2046 MiB/s  (+10.9%)
+dread_seq      baseline=1884  zc=2010 MiB/s  (+6.7%)
+bread_rand     baseline=2813  zc=3188 MiB/s  (+13.3%)
+bread_seq      baseline=2690  zc=3318 MiB/s  (+23.3%)
+dwrite_rand    baseline=3152  zc=4984 MiB/s  (+58.1%)
+dwrite_seq     baseline=3330  zc=4843 MiB/s  (+45.4%)
+bwrite_rand    baseline=1431  zc=1726 MiB/s  (+20.7%)
+bwrite_seq     baseline=1477  zc=2013 MiB/s  (+36.3%)
+
+=== zero-copy vs registered-buffers (per workload) ===
+dread_rand     regbuf=1874  zc=2046 MiB/s  (+9.2%)
+dread_seq      regbuf=1870  zc=2010 MiB/s  (+7.5%)
+bread_rand     regbuf=2984  zc=3188 MiB/s  (+6.8%)
+bread_seq      regbuf=2820  zc=3318 MiB/s  (+17.7%)
+dwrite_rand    regbuf=4449  zc=4984 MiB/s  (+12.0%)
+dwrite_seq     regbuf=5152  zc=4843 MiB/s  (-6.0%)
+bwrite_rand    regbuf=1694  zc=1726 MiB/s  (+1.9%)
+bwrite_seq     regbuf=2027  zc=2013 MiB/s  (-0.7%)
+
+Results in: /root/bench/run-7.1.0-rc1-00091-gee9ed0f56179-dirty
+Server logs: /root/bench/run-7.1.0-rc1-00091-gee9ed0f56179-dirty/server_baseline.log, server_zc.log
+Done.

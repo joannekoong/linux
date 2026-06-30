@@ -1,0 +1,54 @@
+baseline_bread_rand      2660047
+baseline_bread_seq       2876214
+baseline_bwrite_rand     1415683
+baseline_bwrite_seq      1546037
+baseline_dread_rand      1814629
+baseline_dread_seq       1845995
+baseline_dwrite_rand     3244288
+baseline_dwrite_seq      3441048
+regbuf_bread_rand        2912534
+regbuf_bread_seq         2882386
+regbuf_bwrite_rand       1721983
+regbuf_bwrite_seq        2098325
+regbuf_dread_rand        1882845
+regbuf_dread_seq         1905316
+regbuf_dwrite_rand       4903658
+regbuf_dwrite_seq        4654755
+zc_bread_rand            3202137
+zc_bread_seq             3319939
+zc_bwrite_rand           1720612
+zc_bwrite_seq            2062561
+zc_dread_rand            2106536
+zc_dread_seq             2111269
+zc_dwrite_rand           5122468
+zc_dwrite_seq            5331380
+
+=== registered-buffers vs baseline (per workload) ===
+dread_rand     baseline=1772  regbuf=1839 MiB/s  (+3.8%)
+dread_seq      baseline=1803  regbuf=1861 MiB/s  (+3.2%)
+bread_rand     baseline=2598  regbuf=2844 MiB/s  (+9.5%)
+bread_seq      baseline=2809  regbuf=2815 MiB/s  (+0.2%)
+dwrite_rand    baseline=3168  regbuf=4789 MiB/s  (+51.1%)
+dwrite_seq     baseline=3360  regbuf=4546 MiB/s  (+35.3%)
+bwrite_rand    baseline=1383  regbuf=1682 MiB/s  (+21.6%)
+bwrite_seq     baseline=1510  regbuf=2049 MiB/s  (+35.7%)
+
+=== zero-copy vs baseline (per workload) ===
+dread_rand     baseline=1772  zc=2057 MiB/s  (+16.1%)
+dread_seq      baseline=1803  zc=2062 MiB/s  (+14.4%)
+bread_rand     baseline=2598  zc=3127 MiB/s  (+20.4%)
+bread_seq      baseline=2809  zc=3242 MiB/s  (+15.4%)
+dwrite_rand    baseline=3168  zc=5002 MiB/s  (+57.9%)
+dwrite_seq     baseline=3360  zc=5206 MiB/s  (+54.9%)
+bwrite_rand    baseline=1383  zc=1680 MiB/s  (+21.5%)
+bwrite_seq     baseline=1510  zc=2014 MiB/s  (+33.4%)
+
+=== zero-copy vs registered-buffers (per workload) ===
+dread_rand     regbuf=1839  zc=2057 MiB/s  (+11.9%)
+dread_seq      regbuf=1861  zc=2062 MiB/s  (+10.8%)
+bread_rand     regbuf=2844  zc=3127 MiB/s  (+9.9%)
+bread_seq      regbuf=2815  zc=3242 MiB/s  (+15.2%)
+dwrite_rand    regbuf=4789  zc=5002 MiB/s  (+4.5%)
+dwrite_seq     regbuf=4546  zc=5206 MiB/s  (+14.5%)
+bwrite_rand    regbuf=1682  zc=1680 MiB/s  (-0.1%)
+bwrite_seq     regbuf=2049  zc=2014 MiB/s  (-1.7%)
