@@ -809,8 +809,8 @@ static ssize_t exfat_file_read_iter(struct kiocb *iocb, struct iov_iter *iter)
 
 	if (iocb->ki_flags & IOCB_DIRECT) {
 		file_accessed(iocb->ki_filp);
-		ret = iomap_dio_rw(iocb, iter, &exfat_iomap_ops, NULL, 0,
-				NULL, 0);
+		ret = iomap_dio_rw(iocb, iter, &exfat_iomap_ops, NULL,
+				IOMAP_DIO_NO_IOMAP_END, NULL, 0);
 	} else {
 		ret = generic_file_read_iter(iocb, iter);
 	}

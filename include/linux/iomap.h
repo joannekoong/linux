@@ -674,6 +674,14 @@ struct iomap_dio_ops {
  */
 #define IOMAP_DIO_BOUNCE		(1 << 4)
 
+/*
+ * The caller's ->iomap_next() has no ->iomap_end() work to run and this I/O
+ * does not use a folio batch, so the iomap_dio_simple() fast path may skip the
+ * finishing iomap_iter() call entirely.  Only meaningful on the simple read
+ * fast path; ignored by the generic __iomap_dio_rw() slow path.
+ */
+#define IOMAP_DIO_NO_IOMAP_END		(1 << 5)
+
 ssize_t iomap_dio_rw(struct kiocb *iocb, struct iov_iter *iter,
 		const struct iomap_ops *ops, const struct iomap_dio_ops *dops,
 		unsigned int dio_flags, void *private, size_t done_before);

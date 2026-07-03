@@ -1040,7 +1040,9 @@ iomap_dio_simple_finish(struct iomap_iter *iomi, const struct iomap_ops *ops,
  * @dio_flags must not request IOMAP_DIO_FORCE_WAIT, IOMAP_DIO_PARTIAL, or
  * IOMAP_DIO_BOUNCE: this path does not support forced waiting, partial direct
  * I/O, or bouncing.  The range must also stay within i_size and encrypted
- * inodes must use the generic iomap direct I/O path.
+ * inodes must use the generic iomap direct I/O path. IOMAP_DIO_NO_IOMAP_END is
+ * a fast-path optimization the caller can set if there is no work that needs to
+ * be finished after a mapping.
  *
  * -ENOTBLK is the private sentinel returned by iomap_dio_simple() when it
  * decides the request does not fit the fast path.  In that case we proceed to
@@ -1154,7 +1156,14 @@ iomap_dio_simple(struct kiocb *iocb, struct iov_iter *iter,
 		WRITE_ONCE(iocb->private, bio);
 	}
 
-	iomap_dio_simple_finish(&iomi, ops, count, count);
+	/*
+	 * The finishing iomap_iter() only runs the filesystem's iomap_end()
+	 * work and releases any attached folio batch.  When the caller promised
+	 * neither applies (IOMAP_DIO_NO_IOMAP_END), skip it to avoid an extra
+	 * iomap_next() call on the hot read path.
+	 */
+	if (!(dio_flags & IOMAP_DIO_NO_IOMAP_END))
+		iomap_dio_simple_finish(&iomi, ops, count, count);
 
 	if (!wait_for_completion) {
 		bio->bi_end_io = iomap_dio_simple_end_io;
@@ -1171,7 +1180,8 @@ out_bio_release_pages:
 out_bio_put:
 	bio_put(bio);
 out_iomap_end:
-	iomap_dio_simple_finish(&iomi, ops, count, 0);
+	if (!(dio_flags & IOMAP_DIO_NO_IOMAP_END))
+		iomap_dio_simple_finish(&iomi, ops, count, 0);
 	inode_dio_end(inode);
 	return ret;
 }
