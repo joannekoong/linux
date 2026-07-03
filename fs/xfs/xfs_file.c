@@ -251,7 +251,7 @@ xfs_file_dio_read(
 	struct iov_iter		*to)
 {
 	struct xfs_inode	*ip = XFS_I(file_inode(iocb->ki_filp));
-	unsigned int		dio_flags = 0;
+	unsigned int		dio_flags = IOMAP_DIO_NO_IOMAP_END;
 	const struct iomap_dio_ops *dio_ops = NULL;
 	ssize_t			ret;
 

@@ -10,6 +10,7 @@
 #include <linux/mm_types.h>
 #include <linux/blkdev.h>
 #include <linux/folio_batch.h>
+#include <linux/pagemap.h>
 
 struct address_space;
 struct fiemap_extent_info;
@@ -605,14 +606,135 @@ struct iomap_dio_ops {
  */
 #define IOMAP_DIO_BOUNCE		(1 << 4)
 
-ssize_t iomap_dio_rw(struct kiocb *iocb, struct iov_iter *iter,
-		iomap_next_fn iomap_next, const struct iomap_dio_ops *dops,
-		unsigned int dio_flags, void *private, size_t done_before);
+/* optimization hint for the simple fast path */
+#define IOMAP_DIO_NO_IOMAP_END		(1 << 5)
+
 struct iomap_dio *__iomap_dio_rw(struct kiocb *iocb, struct iov_iter *iter,
 		iomap_next_fn iomap_next, const struct iomap_dio_ops *dops,
 		unsigned int dio_flags, void *private, size_t done_before);
 ssize_t iomap_dio_complete(struct iomap_dio *dio);
 void iomap_dio_bio_end_io(struct bio *bio);
+
+static inline bool
+iomap_dio_simple_supported(struct kiocb *iocb, struct iov_iter *iter,
+			   const struct iomap_dio_ops *dops,
+			   unsigned int dio_flags, size_t done_before)
+{
+	struct inode *inode = file_inode(iocb->ki_filp);
+	size_t count = iov_iter_count(iter);
+
+	if (dops || done_before)
+		return false;
+	if (iov_iter_rw(iter) != READ)
+		return false;
+	if (!count)
+		return false;
+	if (count > inode->i_sb->s_blocksize)
+		return false;
+	if (dio_flags & (IOMAP_DIO_FORCE_WAIT | IOMAP_DIO_PARTIAL |
+			 IOMAP_DIO_BOUNCE))
+		return false;
+	if (iocb->ki_pos + count > i_size_read(inode))
+		return false;
+	if (IS_ENCRYPTED(inode))
+		return false;
+	return true;
+}
+
+ssize_t __iomap_dio_simple(struct kiocb *iocb, struct iov_iter *iter,
+		struct iomap_iter *iomi, iomap_next_fn iomap_next,
+		unsigned int dio_flags);
+
+/*
+ * Fast path for small, block-aligned direct I/Os that map to a single
+ * contiguous on-disk extent.
+ *
+ * iomap_dio_simple_supported() enforces the cheap up-front constraints before
+ * entering this path.
+ *
+ * @dops must be NULL: a non-NULL @dops means the caller wants its
+ * ->end_io / ->submit_io hooks invoked, and in particular wants its bios to be
+ * allocated from the filesystem-private @dops->bio_set (whose front_pad sizes a
+ * filesystem-private wrapper around the bio).  The fast path instead allocates
+ * from the shared iomap_dio_simple_pool, whose front_pad matches struct
+ * iomap_dio_simple; the two wrappers are not interchangeable, so we must fall
+ * back to __iomap_dio_rw() in that case.
+ *
+ * @done_before must be zero: a non-zero caller-accumulated residual cannot be
+ * carried through a single-bio inline completion.
+ *
+ * @iter must describe a non-empty READ no larger than the inode block size:
+ * writes, zero-length I/O, and larger requests need the generic iomap direct
+ * I/O path.
+ *
+ * @dio_flags must not request IOMAP_DIO_FORCE_WAIT, IOMAP_DIO_PARTIAL, or
+ * IOMAP_DIO_BOUNCE: this path does not support forced waiting, partial direct
+ * I/O, or bouncing.  The range must also stay within i_size and encrypted
+ * inodes must use the generic iomap direct I/O path. IOMAP_DIO_NO_IOMAP_END is
+ * a fast-path optimization the caller can set if there is no work that needs to
+ * be done after a mapping.
+ *
+ * -ENOTBLK is the private sentinel returned by iomap_dio_simple() when it
+ * decides the request does not fit the fast path.  In that case we proceed to
+ * the generic __iomap_dio_rw() slow path.  Any other errno is a real result and
+ * is propagated as-is, in particular -EAGAIN for IOCB_NOWAIT must reach the
+ * caller.
+ */
+static __always_inline ssize_t
+iomap_dio_simple(struct kiocb *iocb, struct iov_iter *iter,
+		iomap_next_fn iomap_next, void *private, unsigned int dio_flags)
+{
+	struct inode *inode = file_inode(iocb->ki_filp);
+	size_t count = iov_iter_count(iter);
+	struct iomap_iter iomi = {
+		.inode		= inode,
+		.pos		= iocb->ki_pos,
+		.len		= count,
+		.flags		= IOMAP_DIRECT,
+		.private	= private,
+	};
+	ssize_t ret;
+
+	if (iocb->ki_flags & IOCB_NOWAIT)
+		iomi.flags |= IOMAP_NOWAIT;
+
+	ret = kiocb_write_and_wait(iocb, count);
+	if (ret)
+		return ret;
+
+	inode_dio_begin(inode);
+
+	ret = iomap_next(&iomi, &iomi.iomap, &iomi.srcmap);
+	if (ret <= 0) {
+		inode_dio_end(inode);
+		/* a zero return means no mapping, which should never happen */
+		return ret ? ret : -EFAULT;
+	}
+
+	return __iomap_dio_simple(iocb, iter, &iomi, iomap_next, dio_flags);
+}
+
+static __always_inline ssize_t
+iomap_dio_rw(struct kiocb *iocb, struct iov_iter *iter, iomap_next_fn iomap_next,
+		const struct iomap_dio_ops *dops, unsigned int dio_flags,
+		void *private, size_t done_before)
+{
+	struct iomap_dio *dio;
+	ssize_t ret;
+
+	if (iomap_dio_simple_supported(iocb, iter, dops, dio_flags, done_before)) {
+		ret = iomap_dio_simple(iocb, iter, iomap_next, private,
+				dio_flags);
+		if (ret != -ENOTBLK)
+			return ret;
+	}
+
+	dio = __iomap_dio_rw(iocb, iter, iomap_next, dops, dio_flags, private,
+			     done_before);
+	if (IS_ERR_OR_NULL(dio))
+		return PTR_ERR_OR_ZERO(dio);
+	return iomap_dio_complete(dio);
+}
 
 #ifdef CONFIG_SWAP
 struct file;
@@ -678,20 +800,21 @@ static __always_inline int iomap_process(const struct iomap_iter *iter,
 {
 	int ret = 0;
 
-	if (iomap->length && end) {
-		ssize_t advanced = iter->pos - iter->iter_start_pos;
-		loff_t len;
+	if (iomap->length) {
+		if (end) {
+			ssize_t advanced = iter->pos - iter->iter_start_pos;
+			loff_t len;
 
-		len = iomap_length_trim(iter, iter->iter_start_pos,
-				iter->len + advanced);
+			len = iomap_length_trim(iter, iter->iter_start_pos,
+					iter->len + advanced);
 
-		ret = end(iter->inode, iter->iter_start_pos, len, advanced,
-				iter->flags, iomap);
+			ret = end(iter->inode, iter->iter_start_pos, len, advanced,
+					iter->flags, iomap);
+		}
+		ret = iomap_iter_continue(iter, iomap, srcmap, ret);
+		if (ret <= 0)
+			return ret;
 	}
-
-	ret = iomap_iter_continue(iter, iomap, srcmap, ret);
-	if (ret <= 0)
-		return ret;
 
 	ret = begin(iter->inode, iter->pos, iter->len, iter->flags, iomap,
 			srcmap);

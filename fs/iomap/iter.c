@@ -89,9 +89,6 @@ int iomap_iter_continue(const struct iomap_iter *iter, struct iomap *iomap,
 	bool stale = iomap->flags & IOMAP_F_STALE;
 	ssize_t advanced = iter->pos - iter->iter_start_pos;
 
-	if (!iomap->length)
-		return 1;
-
 	/*
 	 * Use iter->len to determine whether to continue onto the next mapping.
 	 * Explicitly terminate on error status or if the current iter has not

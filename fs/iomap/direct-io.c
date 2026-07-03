@@ -968,115 +968,38 @@ static void iomap_dio_simple_end_io(struct bio *bio)
 	iocb->ki_complete(iocb, iomap_dio_simple_complete(sr));
 }
 
-static inline bool
-iomap_dio_simple_supported(struct kiocb *iocb, struct iov_iter *iter,
-			   const struct iomap_dio_ops *dops,
-			   unsigned int dio_flags, size_t done_before)
+static inline void
+iomap_dio_simple_finish(struct iomap_iter *iomi, iomap_next_fn iomap_next,
+		size_t written)
 {
-	struct inode *inode = file_inode(iocb->ki_filp);
-	size_t count = iov_iter_count(iter);
-
-	if (dops || done_before)
-		return false;
-	if (iov_iter_rw(iter) != READ)
-		return false;
-	if (!count)
-		return false;
-	/*
-	 * Simple dio is an optimization for small IO. Filter out large IO
-	 * early as it's the most common case to fail for typical direct IO
-	 * workloads.
-	 */
-	if (count > inode->i_sb->s_blocksize)
-		return false;
-	if (dio_flags & (IOMAP_DIO_FORCE_WAIT | IOMAP_DIO_PARTIAL |
-			 IOMAP_DIO_BOUNCE))
-		return false;
-	if (iocb->ki_pos + count > i_size_read(inode))
-		return false;
-	if (IS_ENCRYPTED(inode))
-		return false;
-
-	return true;
+	iomi->iter_start_pos = iomi->pos;
+	iomi->pos += written;
+	iomi->len -= written;
+	iomap_next(iomi, &iomi->iomap, &iomi->srcmap);
 }
 
-/*
- * Fast path for small, block-aligned direct I/Os that map to a single
- * contiguous on-disk extent.
- *
- * iomap_dio_simple_supported() enforces the cheap up-front constraints before
- * entering this path.
- *
- * @dops must be NULL: a non-NULL @dops means the caller wants its
- * ->end_io / ->submit_io hooks invoked, and in particular wants its bios to be
- * allocated from the filesystem-private @dops->bio_set (whose front_pad sizes a
- * filesystem-private wrapper around the bio).  The fast path instead allocates
- * from the shared iomap_dio_simple_pool, whose front_pad matches struct
- * iomap_dio_simple; the two wrappers are not interchangeable, so we must fall
- * back to __iomap_dio_rw() in that case.
- *
- * @done_before must be zero: a non-zero caller-accumulated residual cannot be
- * carried through a single-bio inline completion.
- *
- * @iter must describe a non-empty READ no larger than the inode block size:
- * writes, zero-length I/O, and larger requests need the generic iomap direct
- * I/O path.
- *
- * @dio_flags must not request IOMAP_DIO_FORCE_WAIT, IOMAP_DIO_PARTIAL, or
- * IOMAP_DIO_BOUNCE: this path does not support forced waiting, partial direct
- * I/O, or bouncing.  The range must also stay within i_size and encrypted
- * inodes must use the generic iomap direct I/O path.
- *
- * -ENOTBLK is the private sentinel returned by iomap_dio_simple() when it
- * decides the request does not fit the fast path.  In that case we proceed to
- * the generic __iomap_dio_rw() slow path.  Any other errno is a real result and
- * is propagated as-is, in particular -EAGAIN for IOCB_NOWAIT must reach the
- * caller.
- */
-static ssize_t
-iomap_dio_simple(struct kiocb *iocb, struct iov_iter *iter,
-		 iomap_next_fn iomap_next, void *private,
-		 unsigned int dio_flags)
+ssize_t
+__iomap_dio_simple(struct kiocb *iocb, struct iov_iter *iter,
+		struct iomap_iter *iomi, iomap_next_fn iomap_next,
+		unsigned int dio_flags)
 {
 	struct inode *inode = file_inode(iocb->ki_filp);
 	size_t count = iov_iter_count(iter);
 	bool wait_for_completion = is_sync_kiocb(iocb);
-	struct iomap_iter iomi = {
-		.inode		= inode,
-		.pos		= iocb->ki_pos,
-		.len		= count,
-		.flags		= IOMAP_DIRECT,
-		.private	= private,
-	};
 	struct iomap_dio_simple *sr;
 	unsigned int alignment;
 	struct bio *bio;
 	ssize_t ret;
 
-	if (iocb->ki_flags & IOCB_NOWAIT)
-		iomi.flags |= IOMAP_NOWAIT;
-
-	ret = kiocb_write_and_wait(iocb, count);
-	if (ret)
-		return ret;
-
-	inode_dio_begin(inode);
-
-	ret = iomap_iter(&iomi, iomap_next);
-	if (ret <= 0) {
-		inode_dio_end(inode);
-		return ret ? ret : -EFAULT;
-	}
-
-	if (iomi.iomap.type != IOMAP_MAPPED ||
-	    iomi.iomap.offset + iomi.iomap.length < iomi.pos + count ||
-	    (iomi.iomap.flags & IOMAP_F_INTEGRITY)) {
+	if (iomi->iomap.type != IOMAP_MAPPED ||
+	    iomi->iomap.offset + iomi->iomap.length < iomi->pos + count ||
+	    (iomi->iomap.flags & IOMAP_F_INTEGRITY)) {
 		ret = -ENOTBLK;
 		goto out_iomap_end;
 	}
 
-	alignment = iomap_dio_alignment(inode, iomi.iomap.bdev, dio_flags);
-	if ((iomi.pos | count) & (alignment - 1)) {
+	alignment = iomap_dio_alignment(inode, iomi->iomap.bdev, dio_flags);
+	if ((iomi->pos | count) & (alignment - 1)) {
 		ret = -EINVAL;
 		goto out_iomap_end;
 	}
@@ -1092,14 +1015,14 @@ iomap_dio_simple(struct kiocb *iocb, struct iov_iter *iter,
 	if (user_backed_iter(iter))
 		dio_flags |= IOMAP_DIO_USER_BACKED;
 
-	bio = bio_alloc_bioset(iomi.iomap.bdev,
+	bio = bio_alloc_bioset(iomi->iomap.bdev,
 			       bio_iov_vecs_to_alloc(iter, BIO_MAX_VECS),
 			       REQ_OP_READ, GFP_KERNEL, &iomap_dio_simple_pool);
 	sr = container_of(bio, struct iomap_dio_simple, bio);
 	sr->iocb = iocb;
 	sr->dio_flags = dio_flags;
 
-	bio->bi_iter.bi_sector = iomap_sector(&iomi.iomap, iomi.pos);
+	bio->bi_iter.bi_sector = iomap_sector(&iomi->iomap, iomi->pos);
 	bio->bi_ioprio = iocb->ki_ioprio;
 
 	ret = bio_iov_iter_get_pages(bio, iter, alignment - 1);
@@ -1124,8 +1047,8 @@ iomap_dio_simple(struct kiocb *iocb, struct iov_iter *iter,
 		WRITE_ONCE(iocb->private, bio);
 	}
 
-	iomap_iter_advance(&iomi, count);
-	iomap_iter(&iomi, iomap_next);
+	if (!(dio_flags & IOMAP_DIO_NO_IOMAP_END))
+		iomap_dio_simple_finish(iomi, iomap_next, count);
 
 	if (!wait_for_completion) {
 		bio->bi_end_io = iomap_dio_simple_end_io;
@@ -1142,33 +1065,12 @@ out_bio_release_pages:
 out_bio_put:
 	bio_put(bio);
 out_iomap_end:
-	iomap_iter(&iomi, iomap_next);
+	if (!(dio_flags & IOMAP_DIO_NO_IOMAP_END))
+		iomap_dio_simple_finish(iomi, iomap_next, 0);
 	inode_dio_end(inode);
 	return ret;
 }
-
-ssize_t
-iomap_dio_rw(struct kiocb *iocb, struct iov_iter *iter,
-		iomap_next_fn iomap_next, const struct iomap_dio_ops *dops,
-		unsigned int dio_flags, void *private, size_t done_before)
-{
-	struct iomap_dio *dio;
-	ssize_t ret;
-
-	if (iomap_dio_simple_supported(iocb, iter, dops, dio_flags,
-				       done_before)) {
-		ret = iomap_dio_simple(iocb, iter, iomap_next, private, dio_flags);
-		if (ret != -ENOTBLK)
-			return ret;
-	}
-
-	dio = __iomap_dio_rw(iocb, iter, iomap_next, dops, dio_flags, private,
-			     done_before);
-	if (IS_ERR_OR_NULL(dio))
-		return PTR_ERR_OR_ZERO(dio);
-	return iomap_dio_complete(dio);
-}
-EXPORT_SYMBOL_GPL(iomap_dio_rw);
+EXPORT_SYMBOL_GPL(__iomap_dio_simple);
 
 static int __init iomap_dio_init(void)
 {
