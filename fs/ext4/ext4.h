@@ -4006,6 +4006,8 @@ static inline void ext4_clear_io_unwritten_flag(ext4_io_end_t *io_end)
 
 int ext4_iomap_next(const struct iomap_iter *iter, struct iomap *iomap,
 		struct iomap *srcmap);
+int ext4_read_iomap_next(const struct iomap_iter *iter, struct iomap *iomap,
+		struct iomap *srcmap);
 int ext4_iomap_next_report(const struct iomap_iter *iter, struct iomap *iomap,
 		struct iomap *srcmap);
 

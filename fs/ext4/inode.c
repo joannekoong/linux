@@ -3771,9 +3771,9 @@ retry:
 }
 
 
-static int ext4_read_iomap_begin(struct inode *inode, loff_t offset,
-		loff_t length, unsigned int flags, struct iomap *iomap,
-		struct iomap *srcmap)
+static __always_inline int ext4_read_iomap_begin(struct inode *inode,
+		loff_t offset, loff_t length, unsigned int flags,
+		struct iomap *iomap, struct iomap *srcmap)
 {
 	int ret;
 	struct ext4_map_blocks map;
@@ -3898,6 +3898,12 @@ int ext4_iomap_next(const struct iomap_iter *iter, struct iomap *iomap,
 			   struct iomap *srcmap)
 {
 	return iomap_process(iter, iomap, srcmap, ext4_iomap_begin, NULL);
+}
+
+int ext4_read_iomap_next(const struct iomap_iter *iter, struct iomap *iomap,
+			   struct iomap *srcmap)
+{
+	return iomap_process(iter, iomap, srcmap, ext4_read_iomap_begin, NULL);
 }
 
 static int ext4_iomap_begin_report(struct inode *inode, loff_t offset,
