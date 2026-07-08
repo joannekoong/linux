@@ -3771,8 +3771,46 @@ retry:
 }
 
 
-static int ext4_iomap_begin(struct inode *inode, loff_t offset, loff_t length,
-		unsigned flags, struct iomap *iomap, struct iomap *srcmap)
+static int ext4_read_iomap_begin(struct inode *inode, loff_t offset,
+		loff_t length, unsigned int flags, struct iomap *iomap,
+		struct iomap *srcmap)
+{
+	int ret;
+	struct ext4_map_blocks map;
+	u8 blkbits = inode->i_blkbits;
+
+	if ((offset >> blkbits) > EXT4_MAX_LOGICAL_BLOCK)
+		return -EINVAL;
+
+	if (WARN_ON_ONCE(ext4_has_inline_data(inode)))
+		return -ERANGE;
+
+	/*
+	 * Calculate the first and last logical blocks respectively.
+	 */
+	map.m_lblk = offset >> blkbits;
+	map.m_len = min_t(loff_t, (offset + length - 1) >> blkbits,
+			  EXT4_MAX_LOGICAL_BLOCK) - map.m_lblk + 1;
+
+	ret = ext4_map_blocks(NULL, inode, &map, 0);
+	if (ret < 0)
+		return ret;
+
+	/*
+	 * When inline encryption is enabled, sometimes I/O to an encrypted file
+	 * has to be broken up to guarantee DUN contiguity.  Handle this by
+	 * limiting the length of the mapping returned.
+	 */
+	map.m_len = fscrypt_limit_io_blocks(inode, map.m_lblk, map.m_len);
+
+	ext4_set_iomap(inode, iomap, &map, offset, length, flags);
+
+	return 0;
+}
+
+static int ext4_write_iomap_begin(struct inode *inode, loff_t offset,
+		loff_t length, unsigned int flags, struct iomap *iomap,
+		struct iomap *srcmap)
 {
 	int ret;
 	struct ext4_map_blocks map;
@@ -3793,37 +3831,33 @@ static int ext4_iomap_begin(struct inode *inode, loff_t offset, loff_t length,
 			  EXT4_MAX_LOGICAL_BLOCK) - map.m_lblk + 1;
 	orig_mlen = map.m_len;
 
-	if (flags & IOMAP_WRITE) {
-		/*
-		 * We check here if the blocks are already allocated, then we
-		 * don't need to start a journal txn and we can directly return
-		 * the mapping information. This could boost performance
-		 * especially in multi-threaded overwrite requests.
-		 */
-		if (offset + length <= i_size_read(inode)) {
-			ret = ext4_map_blocks(NULL, inode, &map, 0);
-			/*
-			 * For DAX we convert extents to initialized ones before
-			 * copying the data, otherwise we do it after I/O so
-			 * there's no need to call into ext4_iomap_alloc().
-			 */
-			if ((map.m_flags & EXT4_MAP_MAPPED) ||
-			    (!(flags & IOMAP_DAX) &&
-			     (map.m_flags & EXT4_MAP_UNWRITTEN))) {
-				/*
-				 * For atomic writes the entire requested
-				 * length should be mapped.
-				 */
-				if (ret == orig_mlen ||
-				    (!(flags & IOMAP_ATOMIC) && ret > 0))
-					goto out;
-			}
-			map.m_len = orig_mlen;
-		}
-		ret = ext4_iomap_alloc(inode, &map, flags);
-	} else {
+	/*
+	 * We check here if the blocks are already allocated, then we
+	 * don't need to start a journal txn and we can directly return
+	 * the mapping information. This could boost performance
+	 * especially in multi-threaded overwrite requests.
+	 */
+	if (offset + length <= i_size_read(inode)) {
 		ret = ext4_map_blocks(NULL, inode, &map, 0);
+		/*
+		 * For DAX we convert extents to initialized ones before
+		 * copying the data, otherwise we do it after I/O so
+		 * there's no need to call into ext4_iomap_alloc().
+		 */
+		if ((map.m_flags & EXT4_MAP_MAPPED) ||
+		    (!(flags & IOMAP_DAX) &&
+		     (map.m_flags & EXT4_MAP_UNWRITTEN))) {
+			/*
+			 * For atomic writes the entire requested
+			 * length should be mapped.
+			 */
+			if (ret == orig_mlen ||
+			    (!(flags & IOMAP_ATOMIC) && ret > 0))
+				goto out;
+		}
+		map.m_len = orig_mlen;
 	}
+	ret = ext4_iomap_alloc(inode, &map, flags);
 
 	if (ret < 0)
 		return ret;
@@ -3848,6 +3882,16 @@ out:
 	ext4_set_iomap(inode, iomap, &map, offset, length, flags);
 
 	return 0;
+}
+
+static int ext4_iomap_begin(struct inode *inode, loff_t offset, loff_t length,
+		unsigned flags, struct iomap *iomap, struct iomap *srcmap)
+{
+	if (flags & IOMAP_WRITE)
+		return ext4_write_iomap_begin(inode, offset, length, flags,
+					      iomap, srcmap);
+	return ext4_read_iomap_begin(inode, offset, length, flags, iomap,
+				     srcmap);
 }
 
 int ext4_iomap_next(const struct iomap_iter *iter, struct iomap *iomap,
