@@ -659,6 +659,9 @@ struct memcg_vmstats_percpu {
 	struct memcg_vmstats_percpu __percpu	*parent_pcpu;
 	struct memcg_vmstats			*vmstats;
 
+	/* EXPERIMENTAL: hierarchical per-CPU zswap (in bytes) */
+	long			zswap_hier;
+
 	/* The above should fit a single cacheline for memcg_rstat_updated() */
 
 	/* Local (CPU and cgroup) page state & events */
@@ -4236,6 +4239,9 @@ mem_cgroup_css_alloc(struct cgroup_subsys_state *parent_css)
 	if (parent) {
 		page_counter_init(&memcg->memory, &parent->memory, memcg_on_dfl);
 		page_counter_init(&memcg->swap, &parent->swap, false);
+#ifdef CONFIG_ZSWAP
+		page_counter_init(&memcg->zswap, &parent->zswap, false);
+#endif
 #ifdef CONFIG_MEMCG_V1
 		WRITE_ONCE(memcg->swappiness, mem_cgroup_swappiness(parent));
 		memcg->memory.track_failcnt = !memcg_on_dfl;
@@ -4250,6 +4256,9 @@ mem_cgroup_css_alloc(struct cgroup_subsys_state *parent_css)
 		init_memcg_events();
 		page_counter_init(&memcg->memory, NULL, true);
 		page_counter_init(&memcg->swap, NULL, false);
+#ifdef CONFIG_ZSWAP
+		page_counter_init(&memcg->zswap, NULL, false);
+#endif
 #ifdef CONFIG_MEMCG_V1
 		page_counter_init(&memcg->kmem, NULL, false);
 		page_counter_init(&memcg->tcpmem, NULL, false);
@@ -5983,6 +5992,85 @@ static struct cftype swap_files[] = {
  * spending cycles on compression when there is already no room left
  * or zswap is disabled altogether somewhere in the hierarchy.
  */
+/*
+ * EXPERIMENTAL:  Selects how zswap usage is accounted and read back, so the
+ * different options can be direclty compared against each other
+ *
+ *   0  rstat + forced flush    baseline aka what the tree does today
+ *   1  rstat + ratelimited     Song's ratelimiting change
+ *   2  hierarchial per-CPU     Hierarchical per-CPU, summed on read
+ *   3  page counter            page counters (like other memcg limits)
+ *
+ * To switch between modes, every run should be started in a fresh cgroup. Don't
+ * use memory.stat or memory.zswap.current stats in any benchmarking, since
+ * they're not properly updated (yet), or at least not in this commit.
+ */
+enum {
+	ZSWAP_ACCT_RSTAT_FORCED,
+	ZSWAP_ACCT_RSTAT_RATELIMITED,
+	ZSWAP_ACCT_HIERARCHICAL,
+	ZSWAP_ACCT_PAGE_COUNTER,
+};
+static int zswap_acct = ZSWAP_ACCT_RSTAT_FORCED;
+module_param(zswap_acct, int, 0644);
+
+static void memcg_zswap_hier_add(struct mem_cgroup *memcg, long val)
+{
+	struct memcg_vmstats_percpu __percpu *statc_pcpu;
+	struct memcg_vmstats_percpu *statc;
+
+	statc_pcpu = memcg->vmstats_percpu;
+	for (; statc_pcpu; statc_pcpu = statc->parent_pcpu) {
+		statc = this_cpu_ptr(statc_pcpu);
+		this_cpu_add(statc_pcpu->zswap_hier, val);
+	}
+}
+
+static unsigned long memcg_zswap_hier_sum(struct mem_cgroup *memcg)
+{
+	long sum = 0;
+	int cpu;
+
+	for_each_possible_cpu(cpu)
+		sum += READ_ONCE(per_cpu_ptr(memcg->vmstats_percpu,
+					     cpu)->zswap_hier);
+	return max(sum, 0L);
+}
+
+static void memcg_zswap_account(struct mem_cgroup *memcg, long size)
+{
+	switch (READ_ONCE(zswap_acct)) {
+	case ZSWAP_ACCT_HIERARCHICAL:
+		memcg_zswap_hier_add(memcg, size);
+		break;
+	case ZSWAP_ACCT_PAGE_COUNTER:
+		if (size >= 0)
+			page_counter_charge(&memcg->zswap, size);
+		else
+			page_counter_uncharge(&memcg->zswap, -size);
+		break;
+	default:
+		mod_memcg_state(memcg, MEMCG_ZSWAP_B, size);
+	}
+}
+
+static unsigned long memcg_zswap_usage(struct mem_cgroup *memcg)
+{
+	switch (READ_ONCE(zswap_acct)) {
+	case ZSWAP_ACCT_RSTAT_RATELIMITED:
+		mem_cgroup_flush_stats_ratelimited(memcg);
+		return memcg_page_state(memcg, MEMCG_ZSWAP_B);
+	case ZSWAP_ACCT_HIERARCHICAL:
+		return memcg_zswap_hier_sum(memcg);
+	case ZSWAP_ACCT_PAGE_COUNTER:
+		return page_counter_read(&memcg->zswap);
+	default:
+		/* Force flush to get accurate stats for charging */
+		__mem_cgroup_flush_stats(memcg, true);
+		return memcg_page_state(memcg, MEMCG_ZSWAP_B);
+	}
+}
+
 bool obj_cgroup_may_zswap(struct obj_cgroup *objcg)
 {
 	struct mem_cgroup *memcg, *original_memcg;
@@ -6004,9 +6092,7 @@ bool obj_cgroup_may_zswap(struct obj_cgroup *objcg)
 			break;
 		}
 
-		/* Force flush to get accurate stats for charging */
-		__mem_cgroup_flush_stats(memcg, true);
-		pages = memcg_page_state(memcg, MEMCG_ZSWAP_B) / PAGE_SIZE;
+		pages = memcg_zswap_usage(memcg) / PAGE_SIZE;
 		if (pages < max)
 			continue;
 		ret = false;
@@ -6042,7 +6128,7 @@ void obj_cgroup_charge_zswap(struct obj_cgroup *objcg, size_t size)
 
 	rcu_read_lock();
 	memcg = obj_cgroup_memcg(objcg);
-	mod_memcg_state(memcg, MEMCG_ZSWAP_B, size);
+	memcg_zswap_account(memcg, size);
 	mod_memcg_state(memcg, MEMCG_ZSWAPPED, 1);
 	if (size == PAGE_SIZE)
 		mod_memcg_state(memcg, MEMCG_ZSWAP_INCOMP, 1);
@@ -6070,7 +6156,7 @@ void obj_cgroup_uncharge_zswap(struct obj_cgroup *objcg, size_t size)
 
 	rcu_read_lock();
 	memcg = obj_cgroup_memcg(objcg);
-	mod_memcg_state(memcg, MEMCG_ZSWAP_B, -size);
+	memcg_zswap_account(memcg, -(long)size);
 	mod_memcg_state(memcg, MEMCG_ZSWAPPED, -1);
 	if (size == PAGE_SIZE)
 		mod_memcg_state(memcg, MEMCG_ZSWAP_INCOMP, -1);

@@ -224,6 +224,9 @@ struct mem_cgroup {
 #ifdef CONFIG_ZSWAP
 	unsigned long zswap_max;
 
+	/* EXPERIMENTAL: use page counter for zswap */
+	struct page_counter zswap;
+
 	/*
 	 * Prevent pages from this memcg from being written back from zswap to
 	 * swap, and from being swapped out on zswap store failures.
