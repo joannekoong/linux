@@ -41,18 +41,40 @@ static inline int folio_flags_is_file_lru(const unsigned long *flags)
 	return !test_bit(PG_swapbacked, flags);
 }
 
-static __always_inline void __update_lru_size(struct lruvec *lruvec,
+/* LRU size changes made under lru_lock, applied after the lock is dropped */
+struct lru_size_batch {
+	long nr_pages[NR_LRU_LISTS];
+};
+
+/*
+ * If @batch is not NULL, only accumulate the node and memcg lruvec stats in
+ * @batch, to be applied by lru_size_batch_apply() after lru_lock is dropped.
+ * The stats don't need lru_lock and updating them is a large part of the
+ * critical section when batching. The zone stats are still updated right
+ * away.
+ */
+static __always_inline void __update_lru_size_batched(struct lruvec *lruvec,
 				enum lru_list lru, enum zone_type zid,
-				long nr_pages)
+				long nr_pages, struct lru_size_batch *batch)
 {
 	struct pglist_data *pgdat = lruvec_pgdat(lruvec);
 
 	lockdep_assert_held(&lruvec->lru_lock);
 	WARN_ON_ONCE(nr_pages != (int)nr_pages);
 
-	mod_lruvec_state(lruvec, NR_LRU_BASE + lru, nr_pages);
+	if (batch)
+		batch->nr_pages[lru] += nr_pages;
+	else
+		mod_lruvec_state(lruvec, NR_LRU_BASE + lru, nr_pages);
 	__mod_zone_page_state(&pgdat->node_zones[zid],
 				NR_ZONE_LRU_BASE + lru, nr_pages);
+}
+
+static __always_inline void __update_lru_size(struct lruvec *lruvec,
+				enum lru_list lru, enum zone_type zid,
+				long nr_pages)
+{
+	__update_lru_size_batched(lruvec, lru, zid, nr_pages, NULL);
 }
 
 static __always_inline void update_lru_size(struct lruvec *lruvec,
@@ -63,6 +85,35 @@ static __always_inline void update_lru_size(struct lruvec *lruvec,
 #ifdef CONFIG_MEMCG
 	mem_cgroup_update_lru_size(lruvec, lru, zid, nr_pages);
 #endif
+}
+
+static __always_inline void update_lru_size_batched(struct lruvec *lruvec,
+				enum lru_list lru, enum zone_type zid,
+				long nr_pages, struct lru_size_batch *batch)
+{
+	__update_lru_size_batched(lruvec, lru, zid, nr_pages, batch);
+#ifdef CONFIG_MEMCG
+	mem_cgroup_update_lru_size(lruvec, lru, zid, nr_pages);
+#endif
+}
+
+/*
+ * Apply the lruvec stats accumulated by update_lru_size_batched() and reset
+ * @batch, so it can be reused for the next lruvec.
+ */
+static inline void lru_size_batch_apply(struct lruvec *lruvec,
+					struct lru_size_batch *batch)
+{
+	enum lru_list lru;
+
+	for_each_lru(lru) {
+		long nr_pages = batch->nr_pages[lru];
+
+		if (nr_pages) {
+			mod_lruvec_state(lruvec, NR_LRU_BASE + lru, nr_pages);
+			batch->nr_pages[lru] = 0;
+		}
+	}
 }
 
 /**
@@ -433,7 +484,8 @@ static inline void folio_migrate_lru_refs(struct folio *new, const struct folio 
 #endif /* CONFIG_LRU_GEN */
 
 static __always_inline
-void lruvec_add_folio(struct lruvec *lruvec, struct folio *folio)
+void lruvec_add_folio_batched(struct lruvec *lruvec, struct folio *folio,
+			      struct lru_size_batch *batch)
 {
 	enum lru_list lru = folio_lru_list(folio);
 
@@ -442,14 +494,21 @@ void lruvec_add_folio(struct lruvec *lruvec, struct folio *folio)
 	if (lru_gen_add_folio(lruvec, folio, false))
 		return;
 
-	update_lru_size(lruvec, lru, folio_zonenum(folio),
-			folio_nr_pages(folio));
+	update_lru_size_batched(lruvec, lru, folio_zonenum(folio),
+				folio_nr_pages(folio), batch);
 	if (lru != LRU_UNEVICTABLE)
 		list_add(&folio->lru, &lruvec->lists[lru]);
 }
 
 static __always_inline
-void lruvec_add_folio_tail(struct lruvec *lruvec, struct folio *folio)
+void lruvec_add_folio(struct lruvec *lruvec, struct folio *folio)
+{
+	lruvec_add_folio_batched(lruvec, folio, NULL);
+}
+
+static __always_inline
+void lruvec_add_folio_tail_batched(struct lruvec *lruvec, struct folio *folio,
+				   struct lru_size_batch *batch)
 {
 	enum lru_list lru = folio_lru_list(folio);
 
@@ -458,14 +517,21 @@ void lruvec_add_folio_tail(struct lruvec *lruvec, struct folio *folio)
 	if (lru_gen_add_folio(lruvec, folio, true))
 		return;
 
-	update_lru_size(lruvec, lru, folio_zonenum(folio),
-			folio_nr_pages(folio));
+	update_lru_size_batched(lruvec, lru, folio_zonenum(folio),
+				folio_nr_pages(folio), batch);
 	/* This is not expected to be used on LRU_UNEVICTABLE */
 	list_add_tail(&folio->lru, &lruvec->lists[lru]);
 }
 
 static __always_inline
-void lruvec_del_folio(struct lruvec *lruvec, struct folio *folio)
+void lruvec_add_folio_tail(struct lruvec *lruvec, struct folio *folio)
+{
+	lruvec_add_folio_tail_batched(lruvec, folio, NULL);
+}
+
+static __always_inline
+void lruvec_del_folio_batched(struct lruvec *lruvec, struct folio *folio,
+			      struct lru_size_batch *batch)
 {
 	enum lru_list lru = folio_lru_list(folio);
 
@@ -476,8 +542,14 @@ void lruvec_del_folio(struct lruvec *lruvec, struct folio *folio)
 
 	if (lru != LRU_UNEVICTABLE)
 		list_del(&folio->lru);
-	update_lru_size(lruvec, lru, folio_zonenum(folio),
-			-folio_nr_pages(folio));
+	update_lru_size_batched(lruvec, lru, folio_zonenum(folio),
+				-folio_nr_pages(folio), batch);
+}
+
+static __always_inline
+void lruvec_del_folio(struct lruvec *lruvec, struct folio *folio)
+{
+	lruvec_del_folio_batched(lruvec, folio, NULL);
 }
 
 #ifdef CONFIG_ANON_VMA_NAME

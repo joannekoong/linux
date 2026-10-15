@@ -64,12 +64,41 @@ static DEFINE_PER_CPU(struct cpu_fbatches, cpu_fbatches) = {
 	.lock_irq = INIT_LOCAL_LOCK(lock_irq),
 };
 
+/*
+ * lru_lock helpers for batches that defer the lruvec stat updates of LRU size
+ * changes to after dropping the lock, see __update_lru_size_batched(). The
+ * deferred stats are applied while still in the RCU read section entered by
+ * locking, which keeps the lruvec's memcg alive.
+ */
+static void lruvec_unlock_irqrestore_batched(struct lruvec *lruvec,
+		unsigned long flags, struct lru_size_batch *batch)
+{
+	spin_unlock_irqrestore(&lruvec->lru_lock, flags);
+	lru_size_batch_apply(lruvec, batch);
+	rcu_read_unlock();
+}
+
+static void folio_lruvec_relock_irqsave_batched(struct folio *folio,
+		struct lruvec **lruvecp, unsigned long *flagsp,
+		struct lru_size_batch *batch)
+{
+	if (*lruvecp) {
+		if (folio_matches_lruvec(folio, *lruvecp))
+			return;
+
+		lruvec_unlock_irqrestore_batched(*lruvecp, *flagsp, batch);
+	}
+
+	*lruvecp = folio_lruvec_lock_irqsave(folio, flagsp);
+}
+
 static void __page_cache_release(struct folio *folio, struct lruvec **lruvecp,
-		unsigned long *flagsp)
+		unsigned long *flagsp, struct lru_size_batch *batch)
 {
 	if (folio_test_lru(folio)) {
-		folio_lruvec_relock_irqsave(folio, lruvecp, flagsp);
-		lruvec_del_folio(*lruvecp, folio);
+		folio_lruvec_relock_irqsave_batched(folio, lruvecp, flagsp,
+						    batch);
+		lruvec_del_folio_batched(*lruvecp, folio, batch);
 		__folio_clear_lru_flags(folio);
 	}
 }
@@ -80,12 +109,13 @@ static void __page_cache_release(struct folio *folio, struct lruvec **lruvecp,
  */
 static void page_cache_release(struct folio *folio)
 {
+	struct lru_size_batch batch = {};
 	struct lruvec *lruvec = NULL;
 	unsigned long flags;
 
-	__page_cache_release(folio, &lruvec, &flags);
+	__page_cache_release(folio, &lruvec, &flags, &batch);
 	if (lruvec)
-		lruvec_unlock_irqrestore(lruvec, flags);
+		lruvec_unlock_irqrestore_batched(lruvec, flags, &batch);
 }
 
 void __folio_put(struct folio *folio)
@@ -107,7 +137,8 @@ void __folio_put(struct folio *folio)
 }
 EXPORT_SYMBOL(__folio_put);
 
-typedef void (*move_fn_t)(struct lruvec *lruvec, struct folio *folio);
+typedef void (*move_fn_t)(struct lruvec *lruvec, struct folio *folio,
+			  struct lru_size_batch *batch);
 
 /*
  * Unqueue a batch of folios from the deferred split queue. This must be
@@ -122,7 +153,8 @@ void folio_batch_unqueue_deferred_split(struct folio_batch *fbatch)
 		folio_unqueue_deferred_split(fbatch->folios[i]);
 }
 
-static void lru_add(struct lruvec *lruvec, struct folio *folio)
+static void lru_add(struct lruvec *lruvec, struct folio *folio,
+		struct lru_size_batch *batch)
 {
 	int was_unevictable = folio_test_clear_unevictable(folio);
 	long nr_pages = folio_nr_pages(folio);
@@ -158,13 +190,14 @@ static void lru_add(struct lruvec *lruvec, struct folio *folio)
 			__count_vm_events(UNEVICTABLE_PGCULLED, nr_pages);
 	}
 
-	lruvec_add_folio(lruvec, folio);
+	lruvec_add_folio_batched(lruvec, folio, batch);
 	trace_mm_lru_insertion(folio);
 }
 
 static void folio_batch_move_lru(struct folio_batch *fbatch, move_fn_t move_fn)
 {
 	int i;
+	struct lru_size_batch batch = {};
 	struct lruvec *lruvec = NULL;
 	unsigned long flags = 0;
 	struct folio_batch free_fbatch;
@@ -199,14 +232,15 @@ static void folio_batch_move_lru(struct folio_batch *fbatch, move_fn_t move_fn)
 			continue;
 		}
 
-		folio_lruvec_relock_irqsave(folio, &lruvec, &flags);
-		move_fn(lruvec, folio);
+		folio_lruvec_relock_irqsave_batched(folio, &lruvec, &flags,
+						    &batch);
+		move_fn(lruvec, folio, &batch);
 
 		folio_set_lru(folio);
 	}
 
 	if (lruvec)
-		lruvec_unlock_irqrestore(lruvec, flags);
+		lruvec_unlock_irqrestore_batched(lruvec, flags, &batch);
 
 	/* Cleanup filtered dead folios. */
 	if (is_lru_add) {
@@ -253,14 +287,15 @@ static void __folio_batch_add_and_move(struct folio_batch __percpu *fbatch,
 		offsetof(struct cpu_fbatches, lock_irq)	\
 	)
 
-static void lru_move_tail(struct lruvec *lruvec, struct folio *folio)
+static void lru_move_tail(struct lruvec *lruvec, struct folio *folio,
+		struct lru_size_batch *batch)
 {
 	if (folio_test_unevictable(folio))
 		return;
 
-	lruvec_del_folio(lruvec, folio);
+	lruvec_del_folio_batched(lruvec, folio, batch);
 	folio_clear_active(folio);
-	lruvec_add_folio_tail(lruvec, folio);
+	lruvec_add_folio_tail_batched(lruvec, folio, batch);
 	__count_vm_events(PGROTATED, folio_nr_pages(folio));
 }
 
@@ -280,7 +315,8 @@ void folio_rotate_reclaimable(struct folio *folio)
 	folio_batch_add_and_move(folio, lru_move_tail);
 }
 
-static void lru_activate(struct lruvec *lruvec, struct folio *folio)
+static void lru_activate(struct lruvec *lruvec, struct folio *folio,
+		struct lru_size_batch *batch)
 {
 	long nr_pages = folio_nr_pages(folio);
 
@@ -288,9 +324,9 @@ static void lru_activate(struct lruvec *lruvec, struct folio *folio)
 		return;
 
 
-	lruvec_del_folio(lruvec, folio);
+	lruvec_del_folio_batched(lruvec, folio, batch);
 	folio_set_active(folio);
-	lruvec_add_folio(lruvec, folio);
+	lruvec_add_folio_batched(lruvec, folio, batch);
 	trace_mm_lru_activate(folio);
 
 	__count_vm_events(PGACTIVATE, nr_pages);
@@ -328,7 +364,7 @@ void folio_activate(struct folio *folio)
 		return;
 
 	lruvec = folio_lruvec_lock_irq(folio);
-	lru_activate(lruvec, folio);
+	lru_activate(lruvec, folio, NULL);
 	lruvec_unlock_irq(lruvec);
 	folio_set_lru(folio);
 }
@@ -546,7 +582,8 @@ void folio_add_lru_vma(struct folio *folio, struct vm_area_struct *vma)
  * written out by flusher threads as this is much more efficient
  * than the single-page writeout from reclaim.
  */
-static void lru_deactivate_file(struct lruvec *lruvec, struct folio *folio)
+static void lru_deactivate_file(struct lruvec *lruvec, struct folio *folio,
+				struct lru_size_batch *batch)
 {
 	bool active = folio_test_active(folio) || lru_gen_enabled();
 	long nr_pages = folio_nr_pages(folio);
@@ -558,7 +595,7 @@ static void lru_deactivate_file(struct lruvec *lruvec, struct folio *folio)
 	if (folio_mapped(folio))
 		return;
 
-	lruvec_del_folio(lruvec, folio);
+	lruvec_del_folio_batched(lruvec, folio, batch);
 	folio_clear_active(folio);
 	folio_clear_referenced(folio);
 
@@ -569,14 +606,14 @@ static void lru_deactivate_file(struct lruvec *lruvec, struct folio *folio)
 		 * race window is _really_ small and  it's not a critical
 		 * problem.
 		 */
-		lruvec_add_folio(lruvec, folio);
+		lruvec_add_folio_batched(lruvec, folio, batch);
 		folio_set_reclaim(folio);
 	} else {
 		/*
 		 * The folio's writeback ended while it was in the batch.
 		 * We move that folio to the tail of the inactive list.
 		 */
-		lruvec_add_folio_tail(lruvec, folio);
+		lruvec_add_folio_tail_batched(lruvec, folio, batch);
 		__count_vm_events(PGROTATED, nr_pages);
 	}
 
@@ -587,23 +624,25 @@ static void lru_deactivate_file(struct lruvec *lruvec, struct folio *folio)
 	}
 }
 
-static void lru_deactivate(struct lruvec *lruvec, struct folio *folio)
+static void lru_deactivate(struct lruvec *lruvec, struct folio *folio,
+		struct lru_size_batch *batch)
 {
 	long nr_pages = folio_nr_pages(folio);
 
 	if (folio_test_unevictable(folio) || !(folio_test_active(folio) || lru_gen_enabled()))
 		return;
 
-	lruvec_del_folio(lruvec, folio);
+	lruvec_del_folio_batched(lruvec, folio, batch);
 	folio_clear_active(folio);
 	folio_clear_referenced(folio);
-	lruvec_add_folio(lruvec, folio);
+	lruvec_add_folio_batched(lruvec, folio, batch);
 
 	__count_vm_events(PGDEACTIVATE, nr_pages);
 	count_memcg_events(lruvec_memcg(lruvec), PGDEACTIVATE, nr_pages);
 }
 
-static void lru_lazyfree(struct lruvec *lruvec, struct folio *folio)
+static void lru_lazyfree(struct lruvec *lruvec, struct folio *folio,
+		struct lru_size_batch *batch)
 {
 	long nr_pages = folio_nr_pages(folio);
 
@@ -611,7 +650,7 @@ static void lru_lazyfree(struct lruvec *lruvec, struct folio *folio)
 	    folio_test_swapcache(folio) || folio_test_unevictable(folio))
 		return;
 
-	lruvec_del_folio(lruvec, folio);
+	lruvec_del_folio_batched(lruvec, folio, batch);
 	folio_clear_active(folio);
 	if (lru_gen_enabled())
 		lru_gen_clear_refs(folio);
@@ -623,7 +662,7 @@ static void lru_lazyfree(struct lruvec *lruvec, struct folio *folio)
 	 * anonymous folios
 	 */
 	folio_clear_swapbacked(folio);
-	lruvec_add_folio(lruvec, folio);
+	lruvec_add_folio_batched(lruvec, folio, batch);
 
 	__count_vm_events(PGLAZYFREE, nr_pages);
 	count_memcg_events(lruvec_memcg(lruvec), PGLAZYFREE, nr_pages);
@@ -998,6 +1037,7 @@ void lru_cache_disable(void)
 void folios_put_refs(struct folio_batch *folios, unsigned int *refs)
 {
 	int i, j;
+	struct lru_size_batch batch = {};
 	struct lruvec *lruvec = NULL;
 	unsigned long flags = 0;
 
@@ -1014,7 +1054,8 @@ void folios_put_refs(struct folio_batch *folios, unsigned int *refs)
 
 		if (folio_is_zone_device(folio)) {
 			if (lruvec) {
-				lruvec_unlock_irqrestore(lruvec, flags);
+				lruvec_unlock_irqrestore_batched(lruvec, flags,
+								 &batch);
 				lruvec = NULL;
 			}
 			if (folio_ref_sub_and_test(folio, nr_refs))
@@ -1028,20 +1069,21 @@ void folios_put_refs(struct folio_batch *folios, unsigned int *refs)
 		/* hugetlb has its own memcg */
 		if (folio_test_hugetlb(folio)) {
 			if (lruvec) {
-				lruvec_unlock_irqrestore(lruvec, flags);
+				lruvec_unlock_irqrestore_batched(lruvec, flags,
+								 &batch);
 				lruvec = NULL;
 			}
 			free_huge_folio(folio);
 			continue;
 		}
-		__page_cache_release(folio, &lruvec, &flags);
+		__page_cache_release(folio, &lruvec, &flags, &batch);
 
 		if (j != i)
 			folios->folios[j] = folio;
 		j++;
 	}
 	if (lruvec)
-		lruvec_unlock_irqrestore(lruvec, flags);
+		lruvec_unlock_irqrestore_batched(lruvec, flags, &batch);
 	if (!j) {
 		folio_batch_reinit(folios);
 		return;
